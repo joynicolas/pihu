@@ -16,6 +16,7 @@
     --teal:#1D9E75; --tealbg:#E7F5EF; --pink:#D4537E; --pinkbg:#FBEAF0;
     --purple:#7F77DD; --purplebg:#EEEDFE; --amber:#BA7517; --amberbg:#FAEEDA;
   }
+  body.dark{ --bg:#1B1813; --card:#26211C; --ink:#F0EBE3; --muted:#A99F94; --line:#3A332C; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;
@@ -28,7 +29,7 @@
   .brand p{font-size:11px; margin:0; color:var(--muted);}
   .langsel{margin-left:auto; display:flex; gap:4px;}
   .langsel button{font-size:12px; padding:5px 9px; border:1px solid var(--line); background:var(--card); border-radius:8px; color:var(--muted); cursor:pointer;}
-  .langsel button.on{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .langsel button.on{background:var(--teal); color:#fff; border-color:var(--teal);}
   .names{display:flex; gap:8px; margin-top:10px;}
   .names input{flex:1; min-width:0; padding:9px 11px; border:1px solid var(--line); border-radius:9px; font-size:14px; background:var(--card); color:var(--ink);}
   .progwrap{height:5px; background:var(--line); border-radius:5px; margin-top:11px; overflow:hidden;}
@@ -202,6 +203,7 @@
           <p id="t-tag">your pregnancy journal</p>
         </div>
         <div class="langsel">
+          <button id="themeBtn" style="font-size:15px;">🌙</button>
           <button data-lang="en" class="on">EN</button>
           <button data-lang="mr">म</button>
           <button data-lang="hi">हि</button>
@@ -240,6 +242,7 @@
 
       <div class="card">
         <div class="chead"><span class="chip" style="background:var(--amberbg);">📖</span><b id="t-reflect"></b></div>
+        <p class="ctext" id="reflectPrompt"></p>
         <textarea id="reflectBox"></textarea>
       </div>
 
@@ -307,17 +310,24 @@
 
 <script>
 /* =====================================================================
-   NURTURA - offline pregnancy journal.  Zero external dependencies.
+   PIHU - offline pregnancy journal.  Zero external dependencies.
    ----------------------------------------------------------------------
-   TO EDIT / EXTEND CONTENT: just edit the UI object and DAYS array below.
-   Add more days by copying a {day:...} block. No coding needed elsewhere.
+   CONTENT MODEL:
+   - WEEKS  : one clinically-based science note per week (weeks 5-40).
+   - MOM/DAD/REF : per-trimester banks of daily activities & prompts
+                   (trimester 1 / 2 / 3).
+   - buildDays() assembles these into 252 daily pages (36 weeks x 7),
+     rotating the activities so each day feels fresh and stage-appropriate.
+   TO EDIT WORDING: change the text inside WEEKS / MOM / DAD / REF.
+   TO ADD A LANGUAGE: extend the UI object and each {en,mr,hi} block.
+   (The _legacy array below is unused and kept only for reference.)
    ===================================================================== */
 
 var UI = {
   en:{tag:"your pregnancy journal", momName:"Mother's name", babyName:"Baby's nickname",
       science:"Today's science note", mom:"For you, mother", dad:"For you, partner",
       reflect:"Reflect", memory:"Today's memory", reflectPH:"Write your thoughts...",
-      addPhoto:"add photo", week:"Week", day:"Day", of:"of", tri1:"First trimester",
+      addPhoto:"add photo", week:"Week", day:"Day", of:"of", tri1:"First trimester", tri2:"Second trimester", tri3:"Third trimester",
       pdf:"Save keepsake PDF", backup:"Back up", restore:"Restore", jump:"Jump to a day", close:"Close",
       play:"Doodle & stickers", clear:"Clear", stickers:"Stickers", addStickers:"🙂 Add stickers",
       voice:"Talk to your baby", rec:"● Record", stop:"■ Stop", del:"Delete",
@@ -329,7 +339,7 @@ var UI = {
   mr:{tag:"तुमची गरोदरपणाची डायरी", momName:"आईचे नाव", babyName:"बाळाचे टोपणनाव",
       science:"आजची वैज्ञानिक नोंद", mom:"तुमच्यासाठी, आई", dad:"तुमच्यासाठी, जोडीदार",
       reflect:"मनातले लिहा", memory:"आजची आठवण", reflectPH:"तुमचे विचार लिहा...",
-      addPhoto:"फोटो जोडा", week:"आठवडा", day:"दिवस", of:"पैकी", tri1:"पहिली तिमाही",
+      addPhoto:"फोटो जोडा", week:"आठवडा", day:"दिवस", of:"पैकी", tri1:"पहिली तिमाही", tri2:"दुसरी तिमाही", tri3:"तिसरी तिमाही",
       pdf:"आठवण PDF साठवा", backup:"बॅकअप", restore:"पुनर्संचयित", jump:"कोणत्याही दिवशी जा", close:"बंद करा",
       play:"रेखाटन व स्टिकर", clear:"पुसा", stickers:"स्टिकर", addStickers:"🙂 स्टिकर जोडा",
       voice:"बाळाशी बोला", rec:"● रेकॉर्ड", stop:"■ थांबा", del:"हटवा",
@@ -341,7 +351,7 @@ var UI = {
   hi:{tag:"आपकी गर्भावस्था डायरी", momName:"माँ का नाम", babyName:"शिशु का उपनाम",
       science:"आज की वैज्ञानिक बात", mom:"आपके लिए, माँ", dad:"आपके लिए, साथी",
       reflect:"मन की बात लिखें", memory:"आज की याद", reflectPH:"अपने विचार लिखें...",
-      addPhoto:"फ़ोटो जोड़ें", week:"सप्ताह", day:"दिन", of:"में से", tri1:"पहली तिमाही",
+      addPhoto:"फ़ोटो जोड़ें", week:"सप्ताह", day:"दिन", of:"में से", tri1:"पहली तिमाही", tri2:"दूसरी तिमाही", tri3:"तीसरी तिमाही",
       pdf:"यादगार PDF सहेजें", backup:"बैकअप", restore:"पुनर्स्थापित", jump:"किसी भी दिन पर जाएँ", close:"बंद करें",
       play:"ड्रॉइंग और स्टिकर", clear:"मिटाएँ", stickers:"स्टिकर", addStickers:"🙂 स्टिकर जोड़ें",
       voice:"अपने शिशु से बात करें", rec:"● रिकॉर्ड", stop:"■ रोकें", del:"हटाएँ",
@@ -352,7 +362,144 @@ var UI = {
       hint:"आपकी डायरी इसी फ़ोन में सहेजी जाती है। नियमित बैकअप लें ताकि वह कभी न खोए।"}
 };
 
-var DAYS = [
+var TRI=function(w){ return w<=13?1 : w<=27?2 : 3; };
+var WEEKS=[
+  {week:5,science:{en:"Your baby's neural tube — the foundation of the brain and spinal cord — is forming this week. Rest, water and folate matter most now.",mr:"या आठवड्यात बाळाची न्यूरल ट्यूब — मेंदू व पाठीच्या कण्याचा पाया — तयार होत आहे. आता विश्रांती, पाणी व फोलेट सर्वात महत्त्वाचे.",hi:"इस सप्ताह आपके शिशु की न्यूरल ट्यूब — मस्तिष्क और रीढ़ की नींव — बन रही है। अभी आराम, पानी और फोलेट सबसे ज़रूरी हैं।"}},
+  {week:6,science:{en:"A tiny heart begins to beat this week, and little arm and leg buds appear. Staying calm keeps your own heart steady too.",mr:"या आठवड्यात बाळाचे चिमुकले हृदय धडधडू लागते आणि हात-पायांचे अंकुर दिसतात. शांत राहिल्याने तुमचेही हृदय स्थिर राहते.",hi:"इस सप्ताह नन्हा दिल धड़कने लगता है और हाथ-पैर की कलियाँ बनती हैं। शांत रहने से आपका दिल भी स्थिर रहता है।"}},
+  {week:7,science:{en:"The brain is growing astonishingly fast now, and the face is starting to form. Gentle days and good rest support this rapid growth.",mr:"आता मेंदू आश्चर्यकारक वेगाने वाढत आहे आणि चेहरा तयार होऊ लागला आहे. शांत दिवस व चांगली विश्रांती या वाढीला मदत करते.",hi:"अब मस्तिष्क बहुत तेज़ी से बढ़ रहा है और चेहरा बनना शुरू हो गया है। शांत दिन और अच्छा आराम इस विकास में मदद करते हैं।"}},
+  {week:8,science:{en:"All the major organs have begun to form this week, and tiny fingers and toes are taking shape. Your baby is about the size of a raspberry.",mr:"या आठवड्यात सर्व महत्त्वाचे अवयव तयार होऊ लागले आहेत आणि चिमुकली बोटे आकार घेत आहेत. बाळ आता रास्पबेरीएवढे आहे.",hi:"इस सप्ताह सभी मुख्य अंग बनने लगे हैं और नन्ही उँगलियाँ आकार ले रही हैं। शिशु अब रसभरी के आकार का है।"}},
+  {week:9,science:{en:"Your baby's essential organs are in place and tiny muscles are forming — the very first, too-soft-to-feel movements begin.",mr:"बाळाचे मुख्य अवयव जागेवर आले आहेत आणि चिमुकले स्नायू तयार होत आहेत — न जाणवणारी पहिली हालचाल सुरू होते.",hi:"शिशु के मुख्य अंग अपनी जगह पर हैं और नन्हे मांसपेशियाँ बन रही हैं — पहली, न महसूस होने वाली हलचल शुरू होती है।"}},
+  {week:10,science:{en:"Vital organs are starting to work, and fingers and toes have separated. Your baby is now officially called a fetus.",mr:"महत्त्वाचे अवयव काम करू लागले आहेत आणि बोटे वेगळी झाली आहेत. बाळाला आता वैद्यकीय भाषेत 'गर्भ' म्हणतात.",hi:"महत्वपूर्ण अंग काम करने लगे हैं और उँगलियाँ अलग हो गई हैं। शिशु को अब 'भ्रूण' कहा जाता है।"}},
+  {week:11,science:{en:"Your baby is moving and stretching now, though far too gently to feel. Tiny nails and tooth buds are forming.",mr:"बाळ आता हालचाल करत आहे व ताणत आहे, पण ते जाणवण्याइतपत नाही. चिमुकली नखे व दातांचे अंकुर तयार होत आहेत.",hi:"शिशु अब हिल-डुल रहा है और खिंचाव कर रहा है, पर महसूस होने जितना नहीं। नन्हे नाखून और दाँतों की कलियाँ बन रही हैं।"}},
+  {week:12,science:{en:"The major building work is done — kidneys make urine, your baby can swallow, and reflexes are appearing. The first trimester is nearly complete.",mr:"मोठे काम पूर्ण होत आले — मूत्रपिंड लघवी बनवते, बाळ गिळू शकते आणि प्रतिक्षिप्त क्रिया दिसतात. पहिली तिमाही जवळजवळ संपली.",hi:"बड़ा निर्माण कार्य लगभग पूरा — गुर्दे मूत्र बनाते हैं, शिशु निगल सकता है और प्रतिवर्त बनने लगे हैं। पहली तिमाही लगभग पूरी।"}},
+  {week:13,science:{en:"Fingerprints have formed this week and your baby can make tiny sucking motions. Bones are beginning to harden.",mr:"या आठवड्यात बोटांचे ठसे तयार झाले आहेत आणि बाळ चिमुकल्या चोखण्याच्या हालचाली करू शकते. हाडे घट्ट होऊ लागली आहेत.",hi:"इस सप्ताह उँगलियों के निशान बन गए हैं और शिशु नन्ही चूसने की हरकतें कर सकता है। हड्डियाँ सख़्त होने लगी हैं।"}},
+  {week:14,science:{en:"The structures for hearing are developing now, and your baby can bring a hand to its mouth and turn its head. Soft fine hair appears.",mr:"आता ऐकण्याची रचना विकसित होत आहे आणि बाळ हात तोंडाकडे नेऊ शकते व मान वळवू शकते. मऊ बारीक केस येतात.",hi:"अब सुनने की संरचनाएँ विकसित हो रही हैं और शिशु हाथ मुँह तक ले जा सकता है व सिर घुमा सकता है। मुलायम महीन बाल आते हैं।"}},
+  {week:15,science:{en:"Bones are strengthening and your baby can sense bright light, even with eyes still closed. The ears are settling into place.",mr:"हाडे मजबूत होत आहेत आणि डोळे बंद असूनही बाळाला तेजस्वी प्रकाश जाणवतो. कान त्यांच्या जागी स्थिरावत आहेत.",hi:"हड्डियाँ मज़बूत हो रही हैं और आँखें बंद होने पर भी शिशु तेज़ रोशनी महसूस कर सकता है। कान अपनी जगह पर आ रहे हैं।"}},
+  {week:16,science:{en:"Your baby's movements are becoming coordinated — rolling and flipping — and facial muscles can now squint and frown.",mr:"बाळाच्या हालचाली आता सुसंगत होत आहेत — लोळणे व पलटणे — आणि चेहऱ्याचे स्नायू आता हालचाल करू शकतात.",hi:"शिशु की हरकतें अब समन्वित हो रही हैं — लुढ़कना और पलटना — और चेहरे की मांसपेशियाँ अब हिल सकती हैं।"}},
+  {week:17,science:{en:"Your baby begins laying down fat for warmth, and the soft skeleton is hardening from cartilage into bone.",mr:"बाळ उबेसाठी चरबी साठवू लागते आणि मऊ सांगाडा कूर्चापासून हाडात रूपांतरित होत आहे.",hi:"शिशु गर्माहट के लिए वसा जमा करने लगता है और मुलायम ढाँचा उपास्थि से हड्डी में बदल रहा है।"}},
+  {week:18,science:{en:"A milestone week — your baby can hear now. Your voice, your heartbeat and gentle music are becoming familiar sounds.",mr:"एक महत्त्वाचा आठवडा — बाळ आता ऐकू शकते. तुमचा आवाज, हृदयाचे ठोके व मृदू संगीत आता ओळखीचे होत आहेत.",hi:"एक मील का पत्थर सप्ताह — शिशु अब सुन सकता है। आपकी आवाज़, दिल की धड़कन और कोमल संगीत अब जाने-पहचाने हो रहे हैं।"}},
+  {week:19,science:{en:"A protective waxy coating called vernix covers your baby's skin, and the brain's sensory areas — hearing, taste, smell — are developing fast.",mr:"व्हर्निक्स नावाचे संरक्षक मेणासारखे आवरण बाळाच्या त्वचेवर येते आणि मेंदूचे संवेदी भाग — श्रवण, चव, वास — झपाट्याने विकसित होतात.",hi:"वर्निक्स नामक सुरक्षात्मक मोमी परत शिशु की त्वचा को ढकती है और मस्तिष्क के संवेदी क्षेत्र — सुनना, स्वाद, गंध — तेज़ी से विकसित होते हैं।"}},
+  {week:20,science:{en:"You're halfway there. Around now many mothers feel the first flutters of movement as your baby grows stronger.",mr:"तुम्ही अर्ध्यावर पोहोचलात. याच सुमारास अनेक आईंना बाळाची पहिली हालचाल जाणवते, कारण बाळ अधिक बळकट होत आहे.",hi:"आप आधे रास्ते पर हैं। इसी समय कई माँओं को शिशु की पहली हलचल महसूस होती है, क्योंकि शिशु मज़बूत हो रहा है।"}},
+  {week:21,science:{en:"Your baby's movements are getting stronger and taste buds are forming — your baby can even taste the flavours of what you eat.",mr:"बाळाच्या हालचाली बळकट होत आहेत आणि चव-कळ्या तयार होत आहेत — तुम्ही जे खाता त्याची चवही बाळाला जाणवते.",hi:"शिशु की हरकतें मज़बूत हो रही हैं और स्वाद-कलिकाएँ बन रही हैं — आप जो खाते हैं उसका स्वाद भी शिशु महसूस करता है।"}},
+  {week:22,science:{en:"Senses are sharpening this week; your baby can sense light and dark, and lips, eyebrows and a tiny grip are becoming defined.",mr:"या आठवड्यात संवेदना तीक्ष्ण होत आहेत; बाळाला प्रकाश-अंधार जाणवतो आणि ओठ, भुवया व चिमुकली पकड स्पष्ट होत आहे.",hi:"इस सप्ताह इंद्रियाँ तेज़ हो रही हैं; शिशु को रोशनी-अँधेरा महसूस होता है और होंठ, भौंहें व नन्ही पकड़ स्पष्ट हो रही है।"}},
+  {week:23,science:{en:"Your baby's hearing is well tuned to your voice now, and the lungs are busy building the blood vessels they'll need to breathe.",mr:"बाळाचे श्रवण आता तुमच्या आवाजाशी जुळले आहे आणि फुफ्फुसे श्वासासाठी लागणाऱ्या रक्तवाहिन्या तयार करत आहेत.",hi:"शिशु की सुनने की क्षमता अब आपकी आवाज़ से जुड़ गई है और फेफड़े साँस के लिए ज़रूरी रक्त-वाहिकाएँ बना रहे हैं।"}},
+  {week:24,science:{en:"Your baby's inner ear, which controls balance, is developed — your baby can now sense whether it is upside down. The face is fully formed.",mr:"बाळाचे आतील कान, जे संतुलन सांभाळतात, विकसित झाले आहेत — बाळाला आता उलटे आहे का हे जाणवते. चेहरा पूर्ण तयार झाला आहे.",hi:"शिशु का भीतरी कान, जो संतुलन संभालता है, विकसित हो गया है — शिशु अब महसूस कर सकता है कि वह उल्टा है। चेहरा पूरी तरह बन गया है।"}},
+  {week:25,science:{en:"Your baby responds to your voice and to sounds now, often with a little movement. Hands are fully formed and fat is filling out.",mr:"बाळ आता तुमच्या आवाजाला व ध्वनींना प्रतिसाद देते, अनेकदा छोट्या हालचालीने. हात पूर्ण तयार झाले आहेत व चरबी भरत आहे.",hi:"शिशु अब आपकी आवाज़ और ध्वनियों पर प्रतिक्रिया देता है, अक्सर हल्की हलचल से। हाथ पूरी तरह बन गए हैं और वसा भर रही है।"}},
+  {week:26,science:{en:"Your baby's eyes begin to open this week, and brain activity for hearing and sight is switching on.",mr:"या आठवड्यात बाळाचे डोळे उघडू लागतात आणि श्रवण व दृष्टीसाठीची मेंदूची क्रिया सुरू होते.",hi:"इस सप्ताह शिशु की आँखें खुलने लगती हैं और सुनने व देखने के लिए मस्तिष्क की गतिविधि शुरू होती है।"}},
+  {week:27,science:{en:"The second trimester ends with your baby sleeping and waking in patterns, blinking, and a very busy, growing brain.",mr:"दुसरी तिमाही संपते — बाळ ठरलेल्या वेळी झोपते-जागते, पापण्या मिचकावते आणि मेंदू झपाट्याने वाढत असतो.",hi:"दूसरी तिमाही समाप्त होती है — शिशु एक लय में सोता-जागता है, पलकें झपकाता है और मस्तिष्क तेज़ी से बढ़ रहा है।"}},
+  {week:28,science:{en:"The third trimester begins. Your baby can open its eyes and dream, and may start settling into a head-down position.",mr:"तिसरी तिमाही सुरू होते. बाळ डोळे उघडू शकते व स्वप्ने पाहते आणि डोके खाली अशी स्थिती घेऊ लागते.",hi:"तीसरी तिमाही शुरू होती है। शिशु आँखें खोल सकता है और सपने देखता है, और सिर नीचे की स्थिति लेने लगता है।"}},
+  {week:29,science:{en:"Your baby's bones are fully formed but still soft, and movements are strong and frequent now. Muscles and lungs keep maturing.",mr:"बाळाची हाडे पूर्ण तयार पण अजून मऊ आहेत आणि हालचाली आता बळकट व वारंवार आहेत. स्नायू व फुफ्फुसे परिपक्व होत आहेत.",hi:"शिशु की हड्डियाँ पूरी तरह बन गई हैं पर अभी मुलायम हैं और हरकतें अब मज़बूत व बार-बार हैं। मांसपेशियाँ व फेफड़े परिपक्व हो रहे हैं।"}},
+  {week:30,science:{en:"Your baby's brain is growing rapidly and developing its folds, and a fine head of hair may be appearing.",mr:"बाळाचा मेंदू झपाट्याने वाढत आहे व त्यावर घड्या तयार होत आहेत आणि डोक्यावर मऊ केस येऊ लागले आहेत.",hi:"शिशु का मस्तिष्क तेज़ी से बढ़ रहा है और उस पर सिलवटें बन रही हैं, और सिर पर महीन बाल आने लगे हैं।"}},
+  {week:31,science:{en:"All five senses are working now, and your baby's brain is making fast connections. Steady weight gain continues.",mr:"आता पाचही संवेदना कार्यरत आहेत आणि बाळाचा मेंदू वेगाने जोडण्या तयार करत आहे. वजन सातत्याने वाढत आहे.",hi:"अब पाँचों इंद्रियाँ काम कर रही हैं और शिशु का मस्तिष्क तेज़ी से संबंध बना रहा है। वज़न लगातार बढ़ रहा है।"}},
+  {week:32,science:{en:"Your baby is practising breathing movements, tiny toenails have formed, and the soft downy hair begins to shed.",mr:"बाळ श्वासाच्या हालचालींचा सराव करत आहे, पायांची चिमुकली नखे तयार झाली आहेत आणि मऊ लव गळू लागली आहे.",hi:"शिशु साँस की हरकतों का अभ्यास कर रहा है, पैरों के नन्हे नाखून बन गए हैं और मुलायम रोएँ झड़ने लगे हैं।"}},
+  {week:33,science:{en:"Your baby's skull bones stay soft and unfused — ready for birth — and your baby can now sense light through your belly.",mr:"बाळाच्या कवटीची हाडे मऊ व जुळलेली नसतात — जन्मासाठी तयार — आणि बाळाला आता पोटातून प्रकाश जाणवतो.",hi:"शिशु की खोपड़ी की हड्डियाँ मुलायम और बिना जुड़ी रहती हैं — जन्म के लिए तैयार — और शिशु अब पेट से रोशनी महसूस कर सकता है।"}},
+  {week:34,science:{en:"Your baby's lungs are nearly mature and the nervous system is fine-tuning. Soft fat is filling out those little cheeks.",mr:"बाळाची फुफ्फुसे जवळजवळ परिपक्व आहेत व मज्जासंस्था अचूक होत आहे. मऊ चरबी त्या चिमुकल्या गालांत भरत आहे.",hi:"शिशु के फेफड़े लगभग परिपक्व हैं और तंत्रिका तंत्र संवर रहा है। मुलायम वसा उन नन्हे गालों को भर रही है।"}},
+  {week:35,science:{en:"Your baby is gaining weight quickly now; the kidneys are fully developed and most internal systems are ready for the world.",mr:"बाळाचे वजन आता झपाट्याने वाढत आहे; मूत्रपिंड पूर्ण विकसित आहेत आणि बहुतेक अंतर्गत यंत्रणा जगासाठी तयार आहेत.",hi:"शिशु का वज़न अब तेज़ी से बढ़ रहा है; गुर्दे पूरी तरह विकसित हैं और अधिकांश आंतरिक तंत्र दुनिया के लिए तैयार हैं।"}},
+  {week:36,science:{en:"Most babies are head-down by now, getting into position. The skin is smooth and your baby is plump and ready.",mr:"बहुतेक बाळे आता डोके खाली स्थितीत येतात. त्वचा गुळगुळीत झाली आहे आणि बाळ गुटगुटीत व तयार आहे.",hi:"अधिकांश शिशु अब सिर नीचे की स्थिति में आ जाते हैं। त्वचा चिकनी है और शिशु गोल-मटोल व तैयार है।"}},
+  {week:37,science:{en:"Your baby is 'early term' this week — practising breathing, sucking and gripping, with lungs almost fully mature.",mr:"या आठवड्यात बाळ 'अर्ली टर्म' आहे — श्वास, चोखणे व पकडण्याचा सराव करत आहे आणि फुफ्फुसे जवळजवळ पूर्ण परिपक्व आहेत.",hi:"इस सप्ताह शिशु 'अर्ली टर्म' है — साँस, चूसने और पकड़ने का अभ्यास कर रहा है और फेफड़े लगभग पूरी तरह परिपक्व हैं।"}},
+  {week:38,science:{en:"Your baby's organs are ready to work on their own, the grasp is firm, and the brain and lungs keep maturing.",mr:"बाळाचे अवयव स्वतः काम करण्यास तयार आहेत, पकड घट्ट आहे आणि मेंदू व फुफ्फुसे परिपक्व होत आहेत.",hi:"शिशु के अंग स्वयं काम करने के लिए तैयार हैं, पकड़ मज़बूत है और मस्तिष्क व फेफड़े परिपक्व हो रहे हैं।"}},
+  {week:39,science:{en:"Full term. Your baby is ready to meet you, building a little more fat to stay warm after birth.",mr:"पूर्ण कालावधी. बाळ तुम्हाला भेटायला तयार आहे, जन्मानंतर ऊब टिकवण्यासाठी थोडी अधिक चरबी साठवत आहे.",hi:"पूर्ण अवधि। शिशु आपसे मिलने के लिए तैयार है, जन्म के बाद गर्म रहने के लिए थोड़ी और वसा बना रहा है।"}},
+  {week:40,science:{en:"Your due date is here. Your baby is fully developed and ready — and that amazing brain will keep growing for years to come.",mr:"तुमची नियत तारीख आली आहे. बाळ पूर्ण विकसित व तयार आहे — आणि तो अद्भुत मेंदू पुढे अनेक वर्षे वाढत राहील.",hi:"आपकी नियत तारीख़ आ गई है। शिशु पूरी तरह विकसित व तैयार है — और वह अद्भुत मस्तिष्क आगे वर्षों तक बढ़ता रहेगा।"}}
+];
+var MOM={
+  1:[
+    {en:"Write a one-line letter to your baby starting: \"I found out about you, and...\"",mr:"बाळाला एका ओळीचे पत्र लिहा: \"मला तुझ्याबद्दल कळले, आणि...\"",hi:"शिशु को एक पंक्ति का पत्र लिखें: \"मुझे तुम्हारे बारे में पता चला, और...\""},
+    {en:"Take five slow belly breaths, one hand resting where your baby is growing.",mr:"पोटावर एक हात ठेवून पाच वेळा सावकाश श्वास घ्या.",hi:"पेट पर एक हाथ रखकर पाँच बार धीरे-धीरे साँस लें।"},
+    {en:"Pick a sweet nickname for your baby to use in this journal.",mr:"या डायरीत वापरण्यासाठी बाळाचे एक गोड टोपणनाव निवडा.",hi:"इस डायरी में उपयोग के लिए शिशु का एक प्यारा उपनाम चुनें।"},
+    {en:"Eat one folate-rich food today — leafy greens, lentils or citrus — for your baby's brain.",mr:"आज बाळाच्या मेंदूसाठी फोलेटयुक्त एक पदार्थ खा — पालेभाज्या, डाळी किंवा लिंबूवर्गीय फळे.",hi:"आज शिशु के मस्तिष्क के लिए फोलेट युक्त एक चीज़ खाएँ — हरी सब्ज़ी, दाल या खट्टे फल।"},
+    {en:"Take a slow ten-minute walk and notice three calm things around you.",mr:"दहा मिनिटे सावकाश चाला आणि आजूबाजूच्या तीन शांत गोष्टी पाहा.",hi:"दस मिनट धीरे-धीरे टहलें और आसपास की तीन शांत चीज़ें देखें।"},
+    {en:"Drink an extra glass of water and rest whenever your body asks you to.",mr:"एक ग्लास जास्त पाणी प्या आणि शरीर सांगेल तेव्हा विश्रांती घ्या.",hi:"एक गिलास अतिरिक्त पानी पिएँ और जब शरीर कहे तब आराम करें।"},
+    {en:"Play a piece of calm music and save it as your baby's first song.",mr:"एक शांत संगीत लावा आणि ते बाळाचे पहिले गाणे म्हणून जपा.",hi:"एक शांत संगीत बजाएँ और उसे शिशु का पहला गाना मानें।"},
+    {en:"Place both hands on your belly and silently say hello to your baby.",mr:"दोन्ही हात पोटावर ठेवा आणि मनातल्या मनात बाळाला नमस्कार करा.",hi:"दोनों हाथ पेट पर रखें और मन ही मन शिशु को नमस्ते कहें।"}
+  ],
+  2:[
+    {en:"Your baby can hear you now — read a short story aloud to your bump.",mr:"बाळ आता तुम्हाला ऐकू शकते — पोटाला एक छोटीशी गोष्ट मोठ्याने वाचा.",hi:"शिशु अब आपको सुन सकता है — पेट को एक छोटी कहानी ज़ोर से पढ़ें।"},
+    {en:"Play your baby's favourite calm song and gently sway to it.",mr:"बाळाचे आवडते शांत गाणे लावा आणि हळुवार डोला.",hi:"शिशु का पसंदीदा शांत गाना बजाएँ और धीरे-धीरे झूमें।"},
+    {en:"When you feel a kick, pause and gently tap back to say hello.",mr:"लाथ जाणवली की थांबा आणि हळूच थाप देऊन प्रतिसाद द्या.",hi:"जब किक महसूस हो, रुकें और हल्की थपकी देकर जवाब दें।"},
+    {en:"Talk to your baby about your day in a few warm sentences.",mr:"तुमच्या दिवसाबद्दल बाळाला काही प्रेमळ वाक्यांत सांगा.",hi:"अपने दिन के बारे में शिशु को कुछ प्यारे वाक्यों में बताएँ।"},
+    {en:"Take a gentle prenatal walk and describe what you see to your baby.",mr:"हलकी फेरी मारा आणि जे दिसते ते बाळाला सांगा.",hi:"हल्की सैर करें और जो दिखे वह शिशु को बताएँ।"},
+    {en:"Eat a colourful, calcium-rich meal for your baby's growing bones.",mr:"बाळाच्या वाढत्या हाडांसाठी कॅल्शियमयुक्त रंगीबेरंगी जेवण घ्या.",hi:"शिशु की बढ़ती हड्डियों के लिए कैल्शियम युक्त रंगीन भोजन लें।"},
+    {en:"Take a belly photo today to remember this beautiful middle stretch.",mr:"हा सुंदर मधला टप्पा लक्षात राहावा म्हणून आज पोटाचा फोटो काढा.",hi:"इस सुंदर बीच के दौर को याद रखने के लिए आज पेट की फ़ोटो लें।"},
+    {en:"Sing a lullaby softly — your baby is learning the melody of your voice.",mr:"हळुवार अंगाई गा — बाळ तुमच्या आवाजाची सूर शिकत आहे.",hi:"धीरे से एक लोरी गाएँ — शिशु आपकी आवाज़ की धुन सीख रहा है।"}
+  ],
+  3:[
+    {en:"Practise slow, deep breathing for a few minutes — calm for you and your baby.",mr:"काही मिनिटे सावकाश, खोल श्वासाचा सराव करा — तुमच्यासाठी व बाळासाठी शांती.",hi:"कुछ मिनट धीमी, गहरी साँस का अभ्यास करें — आपके और शिशु के लिए शांति।"},
+    {en:"Read a gentle bedtime story aloud to your baby tonight.",mr:"आज रात्री बाळाला एक शांत गोष्ट मोठ्याने वाचा.",hi:"आज रात शिशु को एक कोमल कहानी ज़ोर से पढ़ें।"},
+    {en:"Rest on your left side with calm music and feel your baby settle.",mr:"डाव्या कुशीवर शांत संगीतासह विश्रांती घ्या आणि बाळ स्थिरावताना अनुभवा.",hi:"बाएँ करवट शांत संगीत के साथ आराम करें और शिशु को शांत होते महसूस करें।"},
+    {en:"Note how your baby moves today — its little patterns are becoming familiar.",mr:"आज बाळ कसे हालते ते नोंदवा — त्याच्या हालचालींची लय ओळखीची होत आहे.",hi:"आज शिशु कैसे हिलता है, दर्ज करें — उसकी हलचल की लय जानी-पहचानी हो रही है।"},
+    {en:"Pack or add one item to your hospital bag, calmly and slowly.",mr:"दवाखान्याच्या बॅगेत शांतपणे एक वस्तू भरा.",hi:"अस्पताल बैग में शांति से एक चीज़ रखें।"},
+    {en:"Write a short note to the baby you'll meet very soon.",mr:"लवकरच भेटणाऱ्या बाळासाठी एक छोटीशी चिठ्ठी लिहा.",hi:"जल्द ही मिलने वाले शिशु के लिए एक छोटी चिट्ठी लिखें।"},
+    {en:"Take a final-stretch bump photo to treasure later.",mr:"शेवटच्या टप्प्यातला पोटाचा फोटो काढून जपून ठेवा.",hi:"आख़िरी दौर की पेट की फ़ोटो लेकर सहेज लें।"},
+    {en:"Say your baby's name (or nickname) aloud and imagine holding them.",mr:"बाळाचे नाव (किंवा टोपणनाव) मोठ्याने म्हणा आणि त्याला कुशीत घेतल्याची कल्पना करा.",hi:"शिशु का नाम (या उपनाम) ज़ोर से कहें और उसे गोद में लेने की कल्पना करें।"}
+  ]
+};
+var DAD={
+  1:[
+    {en:"Read today's letter aloud — your calm voice is already part of the baby's world.",mr:"आजचे पत्र मोठ्याने वाचा — तुमचा शांत आवाज आताच बाळाच्या जगाचा भाग आहे.",hi:"आज का पत्र ज़ोर से पढ़ें — आपकी शांत आवाज़ अभी से शिशु की दुनिया का हिस्सा है।"},
+    {en:"Bring her a warm, caffeine-free drink and sit together for five minutes.",mr:"तिच्यासाठी कॅफीनशिवाय कोमट पेय आणा आणि पाच मिनिटे सोबत बसा.",hi:"उसके लिए बिना कैफ़ीन वाला गर्म पेय लाएँ और पाँच मिनट साथ बैठें।"},
+    {en:"Suggest a nickname too, then choose one together.",mr:"तुम्हीही एक टोपणनाव सुचवा, मग एकत्र एक निवडा.",hi:"आप भी एक उपनाम सुझाएँ, फिर साथ में एक चुनें।"},
+    {en:"Take one chore off her plate today without being asked.",mr:"आज न सांगता तिच्या कामांपैकी एक काम स्वतः करा.",hi:"आज बिना कहे उसका एक काम स्वयं कर दें।"},
+    {en:"Walk together if you can, or ask about her three calm things.",mr:"शक्य असल्यास सोबत चाला, किंवा तिच्या तीन शांत गोष्टींबद्दल विचारा.",hi:"हो सके तो साथ टहलें, या उसकी तीन शांत चीज़ों के बारे में पूछें।"},
+    {en:"Tell her one reason you're glad to be on this journey with her.",mr:"या प्रवासात तिच्यासोबत असल्याचा आनंद का वाटतो ते एक कारण सांगा.",hi:"इस सफ़र में उसके साथ होने की एक वजह बताएँ।"},
+    {en:"Help plan one simple, nourishing meal for the two of them.",mr:"दोघांसाठी एक साधे, पौष्टिक जेवण ठरवायला मदत करा.",hi:"दोनों के लिए एक सरल, पौष्टिक भोजन की योजना में मदद करें।"},
+    {en:"Put a hand on the bump and say a quiet hello to your baby.",mr:"पोटावर हात ठेवा आणि बाळाला हळूच नमस्कार करा.",hi:"पेट पर हाथ रखें और शिशु को धीरे से नमस्ते कहें।"}
+  ],
+  2:[
+    {en:"Lean close and talk to the bump — your baby can hear your voice now.",mr:"जवळ जाऊन पोटाशी बोला — बाळ आता तुमचा आवाज ऐकू शकते.",hi:"पास जाकर पेट से बात करें — शिशु अब आपकी आवाज़ सुन सकता है।"},
+    {en:"Read a few lines of a story to your baby tonight.",mr:"आज रात्री बाळाला गोष्टीच्या काही ओळी वाचा.",hi:"आज रात शिशु को कहानी की कुछ पंक्तियाँ पढ़ें।"},
+    {en:"Place a hand on the bump and wait quietly for a kick.",mr:"पोटावर हात ठेवा आणि शांतपणे एका लाथेची वाट पाहा.",hi:"पेट पर हाथ रखें और शांति से एक किक का इंतज़ार करें।"},
+    {en:"Plan a calm outing together — a small day to remember.",mr:"एकत्र एक शांत सहल ठरवा — लक्षात राहील असा छोटा दिवस.",hi:"साथ में एक शांत आउटिंग की योजना बनाएँ — याद रहने वाला छोटा दिन।"},
+    {en:"Choose a song that will become 'your' family song.",mr:"तुमच्या कुटुंबाचे खास गाणे ठरेल असे एक गाणे निवडा.",hi:"एक गाना चुनें जो आपके परिवार का ख़ास गाना बने।"},
+    {en:"Tell your baby about yourself in a few gentle sentences.",mr:"बाळाला स्वतःबद्दल काही प्रेमळ वाक्यांत सांगा.",hi:"शिशु को अपने बारे में कुछ कोमल वाक्यों में बताएँ।"},
+    {en:"Take a photo of the growing bump for the journal.",mr:"डायरीसाठी वाढत्या पोटाचा फोटो काढा.",hi:"डायरी के लिए बढ़ते पेट की फ़ोटो लें।"},
+    {en:"Rub her back or feet for a few minutes this evening.",mr:"आज संध्याकाळी तिची पाठ किंवा पाय काही मिनिटे चेपून द्या.",hi:"आज शाम कुछ मिनट उसकी पीठ या पैर दबाएँ।"}
+  ],
+  3:[
+    {en:"Read a bedtime story aloud — your baby knows your voice well now.",mr:"झोपण्याआधी एक गोष्ट मोठ्याने वाचा — बाळ आता तुमचा आवाज चांगला ओळखते.",hi:"सोने से पहले एक कहानी ज़ोर से पढ़ें — शिशु अब आपकी आवाज़ अच्छी तरह पहचानता है।"},
+    {en:"Help pack the hospital bag together, one item at a time.",mr:"दवाखान्याची बॅग एकेक वस्तू ठेवत एकत्र भरा.",hi:"अस्पताल बैग एक-एक चीज़ रखकर साथ में तैयार करें।"},
+    {en:"Install or check the car seat so it's ready and waiting.",mr:"गाडीतील बाळाची सीट बसवा किंवा तपासा, ती तयार ठेवा.",hi:"कार की बेबी सीट लगाएँ या जाँचें, ताकि वह तैयार रहे।"},
+    {en:"Tell your baby you can't wait to meet them, out loud.",mr:"बाळाला भेटण्याची ओढ लागली आहे हे मोठ्याने सांगा.",hi:"शिशु से ज़ोर से कहें कि आप उससे मिलने को बेताब हैं।"},
+    {en:"Take over the heavier chores so she can rest this week.",mr:"या आठवड्यात जड कामे स्वतः करा, जेणेकरून तिला विश्रांती मिळेल.",hi:"इस सप्ताह भारी काम ख़ुद करें ताकि वह आराम कर सके।"},
+    {en:"Take a photo of her beautiful full bump for the journal.",mr:"डायरीसाठी तिच्या सुंदर भरलेल्या पोटाचा फोटो काढा.",hi:"डायरी के लिए उसके सुंदर भरे पेट की फ़ोटो लें।"},
+    {en:"Plan one calm, comforting evening together this week.",mr:"या आठवड्यात एकत्र एक शांत, सुखद संध्याकाळ ठरवा.",hi:"इस सप्ताह साथ में एक शांत, सुकून भरी शाम की योजना बनाएँ।"},
+    {en:"Massage her shoulders or feet to ease the final weeks.",mr:"शेवटचे आठवडे सुसह्य व्हावेत म्हणून तिचे खांदे किंवा पाय चेपा.",hi:"आख़िरी हफ़्ते आसान करने के लिए उसके कंधे या पैर दबाएँ।"}
+  ]
+};
+var REF={
+  1:[
+    {en:"How did you feel the moment you knew?",mr:"कळल्या क्षणी तुम्हाला कसे वाटले?",hi:"जब पता चला उस पल आपको कैसा लगा?"},
+    {en:"What is one hope you already hold for your child?",mr:"तुमच्या बाळासाठी तुमची एक आशा कोणती?",hi:"अपने बच्चे के लिए आपकी एक उम्मीद क्या है?"},
+    {en:"Why did you choose this nickname?",mr:"हे टोपणनाव का निवडलेत?",hi:"यह उपनाम क्यों चुना?"},
+    {en:"What does this baby already mean to you?",mr:"हे बाळ तुमच्यासाठी आताच काय अर्थ ठेवते?",hi:"यह शिशु अभी से आपके लिए क्या मायने रखता है?"},
+    {en:"What is one fear you'd like to let go of?",mr:"कोणती एक भीती तुम्ही सोडून देऊ इच्छिता?",hi:"कौन-सा एक डर आप छोड़ देना चाहते हैं?"},
+    {en:"How does your body feel this week?",mr:"या आठवड्यात तुमचे शरीर कसे वाटते?",hi:"इस सप्ताह आपका शरीर कैसा महसूस करता है?"},
+    {en:"Who was the first person you wanted to tell?",mr:"सर्वात आधी कोणाला सांगावेसे वाटले?",hi:"सबसे पहले किसे बताना चाहा?"},
+    {en:"What kind of parent do you dream of being?",mr:"तुम्ही कसे आई-बाबा होण्याचे स्वप्न पाहता?",hi:"आप कैसे माता-पिता बनने का सपना देखते हैं?"}
+  ],
+  2:[
+    {en:"What did it feel like the first time you felt your baby move?",mr:"बाळाची पहिली हालचाल जाणवली तेव्हा कसे वाटले?",hi:"पहली बार शिशु की हलचल महसूस हुई तब कैसा लगा?"},
+    {en:"What song do you want your baby to know by heart?",mr:"कोणते गाणे बाळाला तोंडपाठ असावे असे वाटते?",hi:"कौन-सा गाना आप चाहते हैं शिशु को याद हो?"},
+    {en:"What are you most excited to show your child one day?",mr:"एक दिवस बाळाला काय दाखवायची सर्वात जास्त ओढ आहे?",hi:"एक दिन शिशु को क्या दिखाने का सबसे ज़्यादा उत्साह है?"},
+    {en:"How has your bond with your baby grown this week?",mr:"या आठवड्यात बाळाशी तुमचे नाते कसे वाढले?",hi:"इस सप्ताह शिशु से आपका रिश्ता कैसे बढ़ा?"},
+    {en:"What does your baby's room look like in your imagination?",mr:"तुमच्या कल्पनेत बाळाची खोली कशी दिसते?",hi:"आपकी कल्पना में शिशु का कमरा कैसा दिखता है?"},
+    {en:"What's a family tradition you want to pass on?",mr:"कोणती कौटुंबिक परंपरा पुढे न्यावीशी वाटते?",hi:"कौन-सी पारिवारिक परंपरा आप आगे ले जाना चाहते हैं?"},
+    {en:"How are you feeling in your body this 'golden' trimester?",mr:"या 'सुवर्ण' तिमाहीत तुमच्या शरीराला कसे वाटते?",hi:"इस 'सुनहरी' तिमाही में आपका शरीर कैसा महसूस करता है?"},
+    {en:"What small moment today do you want to remember?",mr:"आजचा कोणता छोटा क्षण लक्षात ठेवावासा वाटतो?",hi:"आज का कौन-सा छोटा पल याद रखना चाहते हैं?"}
+  ],
+  3:[
+    {en:"What are you most looking forward to about meeting your baby?",mr:"बाळाला भेटण्याबद्दल सर्वात जास्त कशाची ओढ आहे?",hi:"शिशु से मिलने को लेकर सबसे ज़्यादा किसका इंतज़ार है?"},
+    {en:"What does 'ready' mean to you right now?",mr:"आत्ता 'तयार असणे' म्हणजे तुमच्यासाठी काय?",hi:"अभी 'तैयार होना' आपके लिए क्या मायने रखता है?"},
+    {en:"What do you want to whisper to your baby on the first day?",mr:"पहिल्या दिवशी बाळाच्या कानात काय सांगावेसे वाटते?",hi:"पहले दिन शिशु के कान में क्या कहना चाहेंगे?"},
+    {en:"What has surprised you most about this pregnancy?",mr:"या गरोदरपणात कशाने सर्वात जास्त आश्चर्य वाटले?",hi:"इस गर्भावस्था में किस बात ने सबसे ज़्यादा चकित किया?"},
+    {en:"What strengths have you discovered in yourself these months?",mr:"या महिन्यांत स्वतःमधले कोणते सामर्थ्य सापडले?",hi:"इन महीनों में अपने अंदर कौन-सी ताक़त पाई?"},
+    {en:"What do you hope your baby feels the moment they arrive?",mr:"बाळ जन्मल्या क्षणी त्याला काय जाणवावे असे वाटते?",hi:"शिशु के आने के पल वह क्या महसूस करे, ऐसी आशा है?"},
+    {en:"Who do you most want by your side, and why?",mr:"तुमच्या सोबत सर्वात जास्त कोण असावेसे वाटते, आणि का?",hi:"अपने साथ सबसे ज़्यादा किसे चाहते हैं, और क्यों?"},
+    {en:"What memory from these nine months do you never want to forget?",mr:"या नऊ महिन्यांतली कोणती आठवण कधीच विसरू नये असे वाटते?",hi:"इन नौ महीनों की कौन-सी याद कभी नहीं भूलना चाहते?"}
+  ]
+};
+function buildDays(){ var days=[], n=1; WEEKS.forEach(function(w){ var t=TRI(w.week), mb=MOM[t], db=DAD[t], rb=REF[t]; for(var i=0;i<7;i++){ days.push({day:n, week:w.week, tri:t, science:w.science, mom:mb[(n-1)%mb.length], dad:db[(n-1)%db.length], reflect:rb[(n-1)%rb.length]}); n++; } }); return days; }
+var DAYS = buildDays();
+var _legacy = [
   {day:1, week:5, tri:1,
     science:{en:"This week your baby's neural tube is forming - the very foundation of the brain and spinal cord. Rest and water matter most now.",
              mr:"या आठवड्यात बाळाची न्यूरल ट्यूब तयार होत आहे - मेंदू व पाठीच्या कण्याचा पाया. आता विश्रांती व पुरेसे पाणी सर्वात महत्त्वाचे.",
@@ -438,7 +585,7 @@ var DAYS = [
     reflect:{en:"What is one hope you hold for your child's life?", mr:"तुमच्या बाळाच्या आयुष्यासाठी तुमची एक आशा कोणती?", hi:"अपने बच्चे के जीवन के लिए आपकी एक उम्मीद क्या है?"}}
 ];
 
-var TOTAL = 270; /* full program length; MVP ships the first weeks */
+var TOTAL = DAYS.length;
 var COLORS = ["#2E2A25","#D4537E","#1D9E75","#378ADD","#BA7517"];
 var PEN_SIZES = [2,4,7];
 var STICKER_CATS = [
@@ -465,7 +612,7 @@ function dbGet(k){ return new Promise(function(res){ try{ var t=DB.transaction("
 function dbSet(k,v){ return new Promise(function(res){ try{ var t=DB.transaction("kv","readwrite").objectStore("kv").put(v,k); t.onsuccess=function(){res();}; t.onerror=function(){res();}; }catch(e){res();} }); }
 
 /* ---------- state ---------- */
-var state = { settings:{ lang:"en", momName:"", dadName:"", babyName:"", coverPhoto:null, started:false }, days:{} };
+var state = { settings:{ lang:"en", momName:"", dadName:"", babyName:"", coverPhoto:null, started:false, theme:"light" }, days:{} };
 var lang = "en", cur = 0, saveTimer;
 
 function dayState(n){ if(!state.days[n]) state.days[n]={mood:null,momDone:false,dadDone:false,reflect:"",photos:[],doodle:null,stickers:[],audio:null}; var d=state.days[n]; if(!d.photos)d.photos=[]; if(!d.stickers)d.stickers=[]; return d; }
@@ -500,17 +647,19 @@ function applyUI(){
 }
 function renderDots(){
   var dz=document.getElementById("dots"); dz.innerHTML="";
-  DAYS.forEach(function(_,i){ var d=document.createElement("div"); d.className="dot"+(i===cur?" on":""); dz.appendChild(d); });
+  var wk=DAYS[cur].week;
+  DAYS.forEach(function(d,i){ if(d.week!==wk) return; var el=document.createElement("div"); el.className="dot"+(i===cur?" on":""); dz.appendChild(el); });
 }
 function renderDay(){
   var u=UI[lang], d=DAYS[cur], ds=dayState(d.day);
   setText("wklabel", u.week+" "+d.week);
-  setText("trilabel", u.tri1);
+  setText("trilabel", u["tri"+d.tri]||u.tri1);
   setText("daycount", "📅 "+u.day+" "+d.day+" "+u.of+" "+TOTAL);
   document.getElementById("prog").style.width=Math.max(2,Math.round(d.day/TOTAL*100))+"%";
   setText("scienceText", d.science[lang]);
   setText("momText", d.mom[lang]);
   setText("dadText", d.dad[lang]);
+  setText("reflectPrompt", d.reflect[lang]);
   document.getElementById("momCard").className="card task"+(ds.momDone?" done":"");
   document.getElementById("dadCard").className="card task"+(ds.dadDone?" done":"");
   document.getElementById("reflectBox").value=ds.reflect||"";
@@ -731,7 +880,7 @@ function backup(){
 }
 function restore(file){
   var r=new FileReader();
-  r.onload=function(){ try{ var d=JSON.parse(r.result); if(d&&d.days){ state=d; lang=(state.settings&&state.settings.lang)||"en"; dbSet("state",state); initInputs(); applyUI(); syncLangButtons(); renderDay(); } }catch(e){ alert("Could not read that backup file."); } };
+  r.onload=function(){ try{ var d=JSON.parse(r.result); if(d&&d.days){ state=d; lang=(state.settings&&state.settings.lang)||"en"; dbSet("state",state); initInputs(); applyUI(); syncLangButtons(); applyTheme(); renderDay(); } }catch(e){ alert("Could not read that backup file."); } };
   r.readAsText(file);
 }
 
@@ -759,6 +908,7 @@ function initInputs(){
   document.getElementById("momName").value=(state.settings&&state.settings.momName)||"";
   document.getElementById("babyName").value=(state.settings&&state.settings.babyName)||"";
 }
+function applyTheme(){ var dark=(state.settings&&state.settings.theme==="dark"); document.body.classList.toggle("dark", dark); var b=document.getElementById("themeBtn"); if(b) b.textContent=dark?"☀️":"🌙"; }
 function wire(){
   var cl=document.querySelectorAll("#cv-lang button");
   for(var j=0;j<cl.length;j++){ (function(b){ b.onclick=function(){ lang=b.dataset.lang; state.settings.lang=lang; save(); syncLangButtons(); applyUI(); renderCover(); }; })(cl[j]); }
@@ -769,6 +919,7 @@ function wire(){
   document.getElementById("cv-start").onclick=function(){ state.settings.started=true; save(); showApp(); };
   document.getElementById("cv-rm").onclick=function(ev){ ev.stopPropagation(); state.settings.coverPhoto=null; save(); renderCover(); };
   document.getElementById("coverBtn").onclick=showCover;
+  document.getElementById("themeBtn").onclick=function(){ state.settings.theme=(state.settings.theme==="dark"?"light":"dark"); save(); applyTheme(); };
   var bs=document.querySelectorAll(".langsel button");
   for(var i=0;i<bs.length;i++){ (function(b){ b.onclick=function(){ lang=b.dataset.lang; state.settings.lang=lang; save(); syncLangButtons(); applyUI(); renderDay(); }; })(bs[i]); }
   document.getElementById("momName").oninput=function(){ state.settings.momName=this.value; save(); };
@@ -803,7 +954,7 @@ function wire(){
   openDB().then(function(){ return dbGet("state"); }).then(function(saved){
     if(saved&&saved.days){ state=saved; lang=(state.settings&&state.settings.lang)||"en"; }
     if(!state.settings) state.settings={};
-    wire(); syncLangButtons(); applyUI();
+    wire(); syncLangButtons(); applyUI(); applyTheme();
     if(state.settings.started){ showApp(); } else { showCover(); }
   });
 })();
