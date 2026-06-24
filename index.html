@@ -16,6 +16,7 @@
     --teal:#1D9E75; --tealbg:#E7F5EF; --pink:#D4537E; --pinkbg:#FBEAF0;
     --purple:#7F77DD; --purplebg:#EEEDFE; --amber:#BA7517; --amberbg:#FAEEDA;
   }
+  body.dark{ --bg:#1B1813; --card:#26211C; --ink:#F0EBE3; --muted:#A99F94; --line:#3A332C; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;
@@ -28,7 +29,7 @@
   .brand p{font-size:11px; margin:0; color:var(--muted);}
   .langsel{margin-left:auto; display:flex; gap:4px;}
   .langsel button{font-size:12px; padding:5px 9px; border:1px solid var(--line); background:var(--card); border-radius:8px; color:var(--muted); cursor:pointer;}
-  .langsel button.on{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .langsel button.on{background:var(--teal); color:#fff; border-color:var(--teal);}
   .names{display:flex; gap:8px; margin-top:10px;}
   .names input{flex:1; min-width:0; padding:9px 11px; border:1px solid var(--line); border-radius:9px; font-size:14px; background:var(--card); color:var(--ink);}
   .progwrap{height:5px; background:var(--line); border-radius:5px; margin-top:11px; overflow:hidden;}
@@ -202,6 +203,7 @@
           <p id="t-tag">your pregnancy journal</p>
         </div>
         <div class="langsel">
+          <button id="themeBtn" style="font-size:15px;">🌙</button>
           <button data-lang="en" class="on">EN</button>
           <button data-lang="mr">म</button>
           <button data-lang="hi">हि</button>
@@ -465,7 +467,7 @@ function dbGet(k){ return new Promise(function(res){ try{ var t=DB.transaction("
 function dbSet(k,v){ return new Promise(function(res){ try{ var t=DB.transaction("kv","readwrite").objectStore("kv").put(v,k); t.onsuccess=function(){res();}; t.onerror=function(){res();}; }catch(e){res();} }); }
 
 /* ---------- state ---------- */
-var state = { settings:{ lang:"en", momName:"", dadName:"", babyName:"", coverPhoto:null, started:false }, days:{} };
+var state = { settings:{ lang:"en", momName:"", dadName:"", babyName:"", coverPhoto:null, started:false, theme:"light" }, days:{} };
 var lang = "en", cur = 0, saveTimer;
 
 function dayState(n){ if(!state.days[n]) state.days[n]={mood:null,momDone:false,dadDone:false,reflect:"",photos:[],doodle:null,stickers:[],audio:null}; var d=state.days[n]; if(!d.photos)d.photos=[]; if(!d.stickers)d.stickers=[]; return d; }
@@ -731,7 +733,7 @@ function backup(){
 }
 function restore(file){
   var r=new FileReader();
-  r.onload=function(){ try{ var d=JSON.parse(r.result); if(d&&d.days){ state=d; lang=(state.settings&&state.settings.lang)||"en"; dbSet("state",state); initInputs(); applyUI(); syncLangButtons(); renderDay(); } }catch(e){ alert("Could not read that backup file."); } };
+  r.onload=function(){ try{ var d=JSON.parse(r.result); if(d&&d.days){ state=d; lang=(state.settings&&state.settings.lang)||"en"; dbSet("state",state); initInputs(); applyUI(); syncLangButtons(); applyTheme(); renderDay(); } }catch(e){ alert("Could not read that backup file."); } };
   r.readAsText(file);
 }
 
@@ -759,6 +761,7 @@ function initInputs(){
   document.getElementById("momName").value=(state.settings&&state.settings.momName)||"";
   document.getElementById("babyName").value=(state.settings&&state.settings.babyName)||"";
 }
+function applyTheme(){ var dark=(state.settings&&state.settings.theme==="dark"); document.body.classList.toggle("dark", dark); var b=document.getElementById("themeBtn"); if(b) b.textContent=dark?"☀️":"🌙"; }
 function wire(){
   var cl=document.querySelectorAll("#cv-lang button");
   for(var j=0;j<cl.length;j++){ (function(b){ b.onclick=function(){ lang=b.dataset.lang; state.settings.lang=lang; save(); syncLangButtons(); applyUI(); renderCover(); }; })(cl[j]); }
@@ -769,6 +772,7 @@ function wire(){
   document.getElementById("cv-start").onclick=function(){ state.settings.started=true; save(); showApp(); };
   document.getElementById("cv-rm").onclick=function(ev){ ev.stopPropagation(); state.settings.coverPhoto=null; save(); renderCover(); };
   document.getElementById("coverBtn").onclick=showCover;
+  document.getElementById("themeBtn").onclick=function(){ state.settings.theme=(state.settings.theme==="dark"?"light":"dark"); save(); applyTheme(); };
   var bs=document.querySelectorAll(".langsel button");
   for(var i=0;i<bs.length;i++){ (function(b){ b.onclick=function(){ lang=b.dataset.lang; state.settings.lang=lang; save(); syncLangButtons(); applyUI(); renderDay(); }; })(bs[i]); }
   document.getElementById("momName").oninput=function(){ state.settings.momName=this.value; save(); };
@@ -803,7 +807,7 @@ function wire(){
   openDB().then(function(){ return dbGet("state"); }).then(function(saved){
     if(saved&&saved.days){ state=saved; lang=(state.settings&&state.settings.lang)||"en"; }
     if(!state.settings) state.settings={};
-    wire(); syncLangButtons(); applyUI();
+    wire(); syncLangButtons(); applyUI(); applyTheme();
     if(state.settings.started){ showApp(); } else { showCover(); }
   });
 })();
