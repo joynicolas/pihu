@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Pihu — Pregnancy Journal</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#D4537E" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Pihu" />
+<style>
+  :root{
+    --bg:#FAF7F3; --card:#FFFFFF; --ink:#2E2A25; --muted:#7A736B; --line:#ECE6DE;
+    --teal:#1D9E75; --tealbg:#E7F5EF; --pink:#D4537E; --pinkbg:#FBEAF0;
+    --purple:#7F77DD; --purplebg:#EEEDFE; --amber:#BA7517; --amberbg:#FAEEDA;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.5; font-size:16px;}
+  .wrap{max-width:480px; margin:0 auto; min-height:100vh; background:var(--bg);}
+  header{position:sticky; top:0; z-index:5; background:var(--bg); padding:14px 16px 10px; border-bottom:1px solid var(--line);}
+  .brandrow{display:flex; align-items:center; gap:10px;}
+  .logo{width:34px; height:34px; border-radius:50%; background:var(--tealbg); display:flex; align-items:center; justify-content:center; font-size:19px; animation:logoSway 5s ease-in-out infinite;}
+  .brand h1{font-size:17px; margin:0; font-weight:600;}
+  .brand p{font-size:11px; margin:0; color:var(--muted);}
+  .langsel{margin-left:auto; display:flex; gap:4px;}
+  .langsel button{font-size:12px; padding:5px 9px; border:1px solid var(--line); background:var(--card); border-radius:8px; color:var(--muted); cursor:pointer;}
+  .langsel button.on{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .names{display:flex; gap:8px; margin-top:10px;}
+  .names input{flex:1; min-width:0; padding:9px 11px; border:1px solid var(--line); border-radius:9px; font-size:14px; background:var(--card); color:var(--ink);}
+  .progwrap{height:5px; background:var(--line); border-radius:5px; margin-top:11px; overflow:hidden;}
+  .progbar{height:100%; width:3%; background:var(--teal); transition:width .3s;}
+  main{padding:16px;}
+  .dayhead{display:flex; align-items:center; gap:8px; margin-bottom:14px;}
+  .dayhead .wk{font-size:17px; font-weight:600;}
+  .pill{font-size:11px; background:var(--card); border:1px solid var(--line); color:var(--muted); padding:3px 9px; border-radius:20px;}
+  .jumpbtn{cursor:pointer; border-color:var(--teal); color:var(--teal);}
+  .moodrow{display:flex; gap:7px; margin-bottom:16px;}
+  .mood{flex:1; padding:9px 0; border:1px solid var(--line); border-radius:11px; background:var(--card); text-align:center; cursor:pointer;}
+  .mood .e{font-size:21px; line-height:1;}
+  .mood .l{font-size:10px; color:var(--muted); margin-top:3px;}
+  .mood.sel{border-color:var(--pink); background:var(--pinkbg);}
+  .mood.sel .l{color:var(--pink);}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:13px 14px; margin-bottom:12px;}
+  .chead{display:flex; align-items:center; gap:9px;}
+  .chip{width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;}
+  .chead b{font-size:13px; font-weight:600;}
+  .ctext{font-size:14px; color:var(--ink); margin:9px 0 0;}
+  .task{cursor:pointer;}
+  .check{margin-left:auto; width:24px; height:24px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff;}
+  .task.done .check{background:var(--teal); border-color:var(--teal);}
+  .task.done .ctext{color:var(--muted); text-decoration:line-through;}
+  textarea{width:100%; min-height:64px; margin-top:9px; padding:10px; border:1px solid var(--line); border-radius:10px; font-family:inherit; font-size:14px; resize:vertical; background:var(--card); color:var(--ink);}
+  .photos{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .thumb{position:relative; width:80px; height:80px; border-radius:10px; overflow:hidden; border:1px solid var(--line);}
+  .thumb img{width:100%; height:100%; object-fit:cover; display:block; cursor:zoom-in;}
+  .thumb .rm{position:absolute; top:2px; right:2px; width:20px; height:20px; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; border:none; font-size:13px; line-height:20px; cursor:pointer; padding:0;}
+  .addphoto{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:80px; height:80px; border:1.5px dashed var(--line); border-radius:10px; color:var(--muted); font-size:10px; cursor:pointer; background:var(--card);}
+  .addphoto .e{font-size:20px;}
+  .vbtn{padding:10px 16px; border:1px solid var(--line); border-radius:10px; background:var(--card); font-size:14px; cursor:pointer; font-family:inherit; color:var(--ink);}
+  .vbtn.rec{color:var(--pink); border-color:var(--pink);}
+  .vbtn.del{margin-left:8px; color:var(--muted);}
+  .vhint{font-size:11px; color:var(--muted); margin-top:9px;}
+  #voiceArea audio{width:100%; margin-bottom:8px; display:block;}
+  .board{position:relative; width:100%; height:210px; margin-top:10px; border:1px dashed var(--line); border-radius:12px; background:#FFFDF9; overflow:hidden; touch-action:none;}
+  .board canvas{position:absolute; inset:0; width:100%; height:100%;}
+  .sticker{position:absolute; font-size:30px; transform:translate(-50%,-50%); cursor:grab; user-select:none; -webkit-user-select:none; touch-action:none; line-height:1; z-index:2;}
+  .sticker .sx{position:absolute; top:-9px; right:-13px; width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; border:none; font-size:11px; line-height:18px; cursor:pointer; padding:0;}
+  .boardbar{display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .swatch{width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px var(--line); cursor:pointer;}
+  .swatch.sel{box-shadow:0 0 0 2px var(--ink);}
+  .rainbow{width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid #fff; box-shadow:0 0 0 1px var(--line); background:conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red);}
+  .rainbow.sel{box-shadow:0 0 0 2px var(--ink);}
+  .pensep{width:1px; height:24px; background:var(--line); margin:0 2px;}
+  .pensize{width:30px; height:30px; border-radius:9px; border:1px solid var(--line); background:var(--card); display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  .pensize.sel{border-color:var(--ink);}
+  .pensize i{display:block; border-radius:50%; background:var(--ink);}
+  .clearbtn{margin-left:auto; padding:7px 13px; border:1px solid var(--line); border-radius:9px; background:var(--card); font-size:12px; cursor:pointer; font-family:inherit; color:var(--ink);}
+  .stickbtn{margin-top:10px; padding:9px 14px; border:1px solid var(--line); border-radius:10px; background:var(--card); font-size:13px; cursor:pointer; font-family:inherit; color:var(--ink);}
+  .catlabel{font-size:12px; color:var(--muted); font-weight:600; margin:8px 0 8px;}
+  .stickgrid{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:8px;}
+  .stickgrid .sopt{font-size:24px; cursor:pointer; padding:5px 8px; border:1px solid var(--line); border-radius:9px; background:var(--bg);}
+  nav{display:flex; align-items:center; gap:10px; padding:12px 16px; position:sticky; bottom:0; background:var(--bg); border-top:1px solid var(--line);}
+  nav button.navb{flex:none; width:44px; height:44px; border-radius:11px; border:1px solid var(--line); background:var(--card); font-size:19px; cursor:pointer; color:var(--ink);}
+  nav button.navb:disabled{opacity:.35;}
+  .dots{flex:1; display:flex; gap:5px; justify-content:center; flex-wrap:wrap;}
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--line);}
+  .dot.on{background:var(--teal); width:16px; border-radius:4px;}
+  .tools{display:flex; gap:8px; padding:0 16px 26px;}
+  .tools button{flex:1; padding:11px 6px; border:1px solid var(--line); border-radius:11px; background:var(--card); font-size:12px; cursor:pointer; color:var(--ink); font-family:inherit;}
+  .tools .primary{background:var(--teal); color:#fff; border-color:var(--teal);}
+  .hint{font-size:11px; color:var(--muted); text-align:center; padding:0 16px 10px;}
+  .credit{font-size:11px; text-align:center; padding:0 16px 26px; color:var(--muted);}
+  .credit a{color:inherit; text-decoration:underline;}
+  .cv-credit{font-size:11px; text-align:center; color:#9A6680; margin-top:18px;}
+  .cv-credit a{color:inherit; text-decoration:underline;}
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:50; align-items:flex-end; justify-content:center;}
+  .overlay.open{display:flex;}
+  .sheet{background:var(--card); border-radius:18px 18px 0 0; max-width:480px; width:100%; max-height:78vh; overflow:auto; padding:18px 16px 26px;}
+  .sheet h3{margin:0 0 14px; font-size:16px;}
+  .wkgrp{margin-bottom:16px;}
+  .wkgrp .wl{font-size:12px; color:var(--muted); margin-bottom:8px; font-weight:600;}
+  .daychips{display:flex; flex-wrap:wrap; gap:8px;}
+  .daychip{padding:9px 13px; border:1px solid var(--line); border-radius:10px; background:var(--bg); font-size:13px; cursor:pointer;}
+  .daychip.cur{background:var(--teal); color:#fff; border-color:var(--teal);}
+  .sheetclose{display:block; width:100%; margin-top:6px; padding:12px; border:1px solid var(--line); border-radius:11px; background:var(--card); font-size:14px; cursor:pointer; font-family:inherit; color:var(--ink);}
+  .lightbox{position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; z-index:60; align-items:center; justify-content:center;}
+  .lightbox.open{display:flex;}
+  .lightbox img{max-width:94%; max-height:84%; border-radius:10px;}
+  .lbclose{position:absolute; top:16px; right:18px; width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.18); color:#fff; border:none; font-size:24px; cursor:pointer;}
+  #cover{display:none; flex-direction:column; align-items:center; min-height:100vh; padding:24px 22px 44px; background:linear-gradient(160deg,#FCE9F1 0%,#F4ECFB 48%,#E9F6F1 100%); position:relative; overflow:auto; isolation:isolate;}
+  .cv-deco{position:absolute; font-size:22px; opacity:.55; pointer-events:none; animation:floatA 6s ease-in-out infinite;}
+  .cv-scene{position:absolute; left:0; bottom:6px; z-index:-1; opacity:.9; pointer-events:none;}
+  .sway{transform-box:fill-box; transform-origin:0% 100%; animation:swayA 7s ease-in-out infinite;}
+  .bird{transform-box:fill-box; transform-origin:center; animation:bobA 2.6s ease-in-out infinite;}
+  .note{opacity:0;}
+  .n1{animation:chirpA 3.2s ease-in-out infinite;}
+  .n2{animation:chirpA 3.2s ease-in-out .7s infinite;}
+  @keyframes swayA{0%,100%{transform:rotate(-1.4deg);}50%{transform:rotate(1.4deg);}}
+  @keyframes bobA{0%,100%{transform:translateY(0);}50%{transform:translateY(-2px);}}
+  @keyframes chirpA{0%{opacity:0; transform:translate(0,0);}15%{opacity:.95;}100%{opacity:0; transform:translate(7px,-18px);}}
+  @keyframes floatA{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+  @keyframes logoSway{0%,100%{transform:rotate(-4deg);}50%{transform:rotate(4deg);}}
+  @media (prefers-reduced-motion: reduce){ .sway,.bird,.n1,.n2,.cv-deco,.logo{animation:none !important;} }
+  #cv-lang{position:absolute; top:14px; right:14px; display:flex; gap:5px; z-index:2;}
+  #cv-lang button{font-size:12px; padding:5px 9px; border:1px solid rgba(0,0,0,.10); background:rgba(255,255,255,.75); border-radius:8px; color:#7A736B; cursor:pointer; font-family:inherit;}
+  #cv-lang button.on{background:#2E2A25; color:#fff; border-color:#2E2A25;}
+  .cv-title{font-family:"Snell Roundhand","Segoe Script","Bradley Hand",cursive; font-size:40px; line-height:1.12; text-align:center; color:#B83C66; margin:40px 0 4px; font-weight:600;}
+  .cv-photo{width:140px; height:140px; border-radius:50%; background:#fff center/cover no-repeat; border:3px dashed #E29ABA; margin:16px 0 6px; position:relative; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 18px rgba(184,60,102,.16);}
+  .cv-photo.has{border-style:solid; border-color:#D4537E;}
+  .cv-plus{font-size:36px; color:#E29ABA;}
+  .cv-rm{position:absolute; top:4px; right:4px; width:26px; height:26px; border-radius:50%; background:rgba(0,0,0,.5); color:#fff; border:none; font-size:13px; line-height:26px; padding:0; cursor:pointer;}
+  .cv-addcap{font-size:12px; color:#9A6680; margin-bottom:16px; text-align:center;}
+  .cv-msg{background:#fff; border-radius:16px; padding:16px 18px; font-size:15px; line-height:1.6; color:#5A4A52; box-shadow:0 6px 18px rgba(0,0,0,.06); max-width:420px; width:100%; margin-bottom:20px;}
+  .cv-q{width:100%; max-width:420px;}
+  .cv-q label{font-size:14px; color:#9A4E72; font-weight:600;}
+  .cv-q input{width:100%; padding:12px 14px; border:1px solid #EAD3DE; border-radius:12px; font-size:15px; margin:7px 0 16px; background:#fff; color:#2E2A25; font-family:inherit;}
+  .cv-start{margin-top:4px; width:100%; max-width:420px; padding:15px; border:none; border-radius:14px; background:#D4537E; color:#fff; font-size:16px; font-weight:600; cursor:pointer; box-shadow:0 8px 20px rgba(212,83,126,.3); font-family:inherit;}
+  #print{display:none;}
+  @media print{
+    body,.wrap{background:#fff;}
+    #app,.overlay,.lightbox{display:none !important;}
+    #print{display:block; padding:0;}
+    .pday{page-break-inside:avoid; border-bottom:1px solid #ddd; padding:14px 0;}
+    .pphotos img{width:120px; height:120px; object-fit:cover; margin:6px 6px 0 0; border-radius:8px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="cover">
+    <div id="cv-lang"><button data-lang="en" class="on">EN</button><button data-lang="mr">म</button><button data-lang="hi">हि</button></div>
+    <span class="cv-deco" style="top:64px;left:22px;">🌸</span>
+    <span class="cv-deco" style="top:110px;right:28px;">💕</span>
+    <span class="cv-deco" style="top:340px;left:16px;">🍼</span>
+    <span class="cv-deco" style="bottom:150px;right:22px;">⭐</span>
+    <span class="cv-deco" style="bottom:70px;left:26px;">🦋</span>
+    <div class="cv-scene" aria-hidden="true">
+      <svg viewBox="0 0 230 112" width="230" height="112" xmlns="http://www.w3.org/2000/svg">
+        <g class="sway">
+          <path d="M0 98 Q72 88 152 70" stroke="#A97450" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <g transform="translate(44,91) rotate(-52) scale(0.8)"><path d="M0 0 Q9 -7 18 0 Q9 7 0 0 Z" fill="#86CBA3"/><path d="M2 0 L15 0" stroke="#3F7A58" stroke-width="0.9" fill="none" opacity=".5"/></g>
+          <g transform="translate(70,86) rotate(-20)"><path d="M0 0 Q9 -7 18 0 Q9 7 0 0 Z" fill="#6FBE93"/><path d="M2 0 L15 0" stroke="#3F7A58" stroke-width="0.9" fill="none" opacity=".5"/></g>
+          <g transform="translate(72,87) rotate(46) scale(0.72)"><path d="M0 0 Q9 -7 18 0 Q9 7 0 0 Z" fill="#7CC49B"/><path d="M2 0 L15 0" stroke="#3F7A58" stroke-width="0.9" fill="none" opacity=".5"/></g>
+          <g transform="translate(100,80) rotate(-32) scale(0.92)"><path d="M0 0 Q9 -7 18 0 Q9 7 0 0 Z" fill="#6FBE93"/><path d="M2 0 L15 0" stroke="#3F7A58" stroke-width="0.9" fill="none" opacity=".5"/></g>
+          <g transform="translate(122,75) rotate(-14) scale(0.82)"><path d="M0 0 Q9 -7 18 0 Q9 7 0 0 Z" fill="#86CBA3"/><path d="M2 0 L15 0" stroke="#3F7A58" stroke-width="0.9" fill="none" opacity=".5"/></g>
+          <g transform="translate(120,77) rotate(40) scale(0.62)"><path d="M0 0 Q9 -7 18 0 Q9 7 0 0 Z" fill="#7CC49B"/><path d="M2 0 L15 0" stroke="#3F7A58" stroke-width="0.9" fill="none" opacity=".5"/></g>
+          <g class="bird">
+            <path d="M138 60 L127 55 L137 65 Z" fill="#CE6F8A"/>
+            <ellipse cx="150" cy="61" rx="13" ry="10" fill="#E2899F"/>
+            <path d="M141 58 Q147 67 154 60 Z" fill="#D4748C"/>
+            <circle cx="162" cy="53" r="8" fill="#EFA0B4"/>
+            <polygon points="170,52 179,54 170,57" fill="#E8A23C"/>
+            <circle cx="164" cy="51" r="1.7" fill="#3a2a30"/>
+          </g>
+        </g>
+        <g>
+          <text x="175" y="44" class="note n1" font-size="12" fill="#B85C82">♪</text>
+          <text x="184" y="40" class="note n2" font-size="10" fill="#B85C82">♫</text>
+        </g>
+      </svg>
+    </div>
+    <h1 class="cv-title" id="cv-title">My Pregnancy Journal</h1>
+    <div class="cv-photo" id="cv-photo"><span class="cv-plus">＋</span><button class="cv-rm" id="cv-rm" style="display:none;">✕</button></div>
+    <div class="cv-addcap" id="cv-addcap"></div>
+    <div class="cv-msg" id="cv-msg"></div>
+    <div class="cv-q"><label id="cv-askMum"></label><input id="cv-mum" type="text" /></div>
+    <div class="cv-q"><label id="cv-askDad"></label><input id="cv-dad" type="text" /></div>
+    <button class="cv-start" id="cv-start"></button>
+    <p class="cv-credit"><a href="https://www.linkedin.com/in/joy9887" target="_blank" rel="noopener">Created by Joy James Nicolas</a></p>
+    <input id="coverPhotoInput" type="file" accept="image/*" style="display:none;" />
+  </div>
+  <div id="app">
+    <header>
+      <div class="brandrow">
+        <div class="logo">🌱</div>
+        <div class="brand">
+          <h1 id="t-app">Pihu</h1>
+          <p id="t-tag">your pregnancy journal</p>
+        </div>
+        <div class="langsel">
+          <button data-lang="en" class="on">EN</button>
+          <button data-lang="mr">म</button>
+          <button data-lang="hi">हि</button>
+        </div>
+      </div>
+      <div class="names">
+        <input id="momName" type="text" />
+        <input id="babyName" type="text" />
+      </div>
+      <div class="progwrap"><div class="progbar" id="prog"></div></div>
+    </header>
+
+    <main>
+      <div class="dayhead">
+        <span class="wk" id="wklabel"></span>
+        <span class="pill" id="trilabel"></span>
+        <span class="pill jumpbtn" id="daycount" style="margin-left:auto;"></span>
+      </div>
+
+      <div class="moodrow" id="moodrow"></div>
+
+      <div class="card">
+        <div class="chead"><span class="chip" style="background:var(--tealbg);">🧠</span><b id="t-science"></b></div>
+        <p class="ctext" id="scienceText"></p>
+      </div>
+
+      <div class="card task" id="momCard">
+        <div class="chead"><span class="chip" style="background:var(--pinkbg);">✍️</span><b id="t-mom"></b><span class="check">✓</span></div>
+        <p class="ctext" id="momText"></p>
+      </div>
+
+      <div class="card task" id="dadCard">
+        <div class="chead"><span class="chip" style="background:var(--purplebg);">🤝</span><b id="t-dad"></b><span class="check">✓</span></div>
+        <p class="ctext" id="dadText"></p>
+      </div>
+
+      <div class="card">
+        <div class="chead"><span class="chip" style="background:var(--amberbg);">📖</span><b id="t-reflect"></b></div>
+        <textarea id="reflectBox"></textarea>
+      </div>
+
+      <div class="card">
+        <div class="chead"><span class="chip" style="background:var(--tealbg);">📷</span><b id="t-memory"></b></div>
+        <div class="photos" id="photos"></div>
+        <input id="photoInput" type="file" accept="image/*" style="display:none;" />
+      </div>
+
+      <div class="card">
+        <div class="chead"><span class="chip" style="background:var(--purplebg);">🎤</span><b id="t-voice"></b></div>
+        <div id="voiceArea"></div>
+        <div class="vhint" id="t-recHint"></div>
+      </div>
+
+      <div class="card">
+        <div class="chead"><span class="chip" style="background:var(--pinkbg);">🎨</span><b id="t-play"></b></div>
+        <div class="board" id="board"><canvas id="doodle"></canvas></div>
+        <div class="boardbar" id="boardbar"></div>
+        <button class="stickbtn" id="stickBtn"></button>
+        <input type="color" id="colorPick" value="#ff66aa" style="display:none;" />
+      </div>
+    </main>
+
+    <nav>
+      <button class="navb" id="prev">‹</button>
+      <div class="dots" id="dots"></div>
+      <button class="navb" id="next">›</button>
+    </nav>
+
+    <div class="tools">
+      <button class="primary" id="pdfBtn"></button>
+      <button id="backupBtn"></button>
+      <button id="restoreBtn"></button>
+      <button id="coverBtn"></button>
+    </div>
+    <p class="hint" id="t-hint"></p>
+    <p class="credit"><a href="https://www.linkedin.com/in/joy9887" target="_blank" rel="noopener">Created by Joy James Nicolas</a></p>
+    <input id="restoreInput" type="file" accept="application/json,.json" style="display:none;" />
+  </div>
+
+  <div class="overlay" id="jumpOverlay">
+    <div class="sheet">
+      <h3 id="jumpTitle">Jump to a day</h3>
+      <div id="jumpBody"></div>
+      <button class="sheetclose" id="jumpClose">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="stickerOverlay">
+    <div class="sheet">
+      <h3 id="stickTitle">Stickers</h3>
+      <div id="stickBody"></div>
+      <button class="sheetclose" id="stickClose">Close</button>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightbox">
+    <button class="lbclose" id="lbClose">×</button>
+    <img id="lbImg" src="" alt="memory photo" />
+  </div>
+
+  <div id="print"></div>
+</div>
+
+<script>
+/* =====================================================================
+   NURTURA - offline pregnancy journal.  Zero external dependencies.
+   ----------------------------------------------------------------------
+   TO EDIT / EXTEND CONTENT: just edit the UI object and DAYS array below.
+   Add more days by copying a {day:...} block. No coding needed elsewhere.
+   ===================================================================== */
+
+var UI = {
+  en:{tag:"your pregnancy journal", momName:"Mother's name", babyName:"Baby's nickname",
+      science:"Today's science note", mom:"For you, mother", dad:"For you, partner",
+      reflect:"Reflect", memory:"Today's memory", reflectPH:"Write your thoughts...",
+      addPhoto:"add photo", week:"Week", day:"Day", of:"of", tri1:"First trimester",
+      pdf:"Save keepsake PDF", backup:"Back up", restore:"Restore", jump:"Jump to a day", close:"Close",
+      play:"Doodle & stickers", clear:"Clear", stickers:"Stickers", addStickers:"🙂 Add stickers",
+      voice:"Talk to your baby", rec:"● Record", stop:"■ Stop", del:"Delete",
+      recHint:"Your baby is learning the sound of your voice. Leave a little message to play back one day — up to 2 minutes, one a day, kept safely on this phone.", noMic:"Microphone is not available in this browser.",
+      cats:{love:"Love & joy", baby:"Baby", nature:"Nature", animals:"Animals & birds", sounds:"Sounds & music", food:"Food & cravings", moments:"Moments"}, coverBtn:"🏠 Cover",
+      coverTitle:"My Pregnancy Journal", coverCap:"Add a photo of Mumma & Dada", babyMsg:"Add a photo of Mumma and Dada together — just like the moment you first heard about me. I’ll get to see it once I’m here! 💛  — your baby", askMum:"What’s your name, Mumma?", askDad:"And your name, Dada?", mumPH:"Mumma’s name", dadPH:"Dada’s name", startBtn:"Start our journey 🌱",
+      moods:["Joyful","Good","Okay","Low","Tearful"],
+      hint:"Your journal is saved on this device. Back it up regularly so you never lose it."},
+  mr:{tag:"तुमची गरोदरपणाची डायरी", momName:"आईचे नाव", babyName:"बाळाचे टोपणनाव",
+      science:"आजची वैज्ञानिक नोंद", mom:"तुमच्यासाठी, आई", dad:"तुमच्यासाठी, जोडीदार",
+      reflect:"मनातले लिहा", memory:"आजची आठवण", reflectPH:"तुमचे विचार लिहा...",
+      addPhoto:"फोटो जोडा", week:"आठवडा", day:"दिवस", of:"पैकी", tri1:"पहिली तिमाही",
+      pdf:"आठवण PDF साठवा", backup:"बॅकअप", restore:"पुनर्संचयित", jump:"कोणत्याही दिवशी जा", close:"बंद करा",
+      play:"रेखाटन व स्टिकर", clear:"पुसा", stickers:"स्टिकर", addStickers:"🙂 स्टिकर जोडा",
+      voice:"बाळाशी बोला", rec:"● रेकॉर्ड", stop:"■ थांबा", del:"हटवा",
+      recHint:"तुमचे बाळ आता तुमचा आवाज ओळखू लागले आहे. पुढे ऐकवण्यासाठी एक छोटासा संदेश ठेवा — जास्तीत जास्त २ मिनिटे, दिवसातून एक, याच फोनवर सुरक्षित.", noMic:"या ब्राउझरमध्ये मायक्रोफोन उपलब्ध नाही.",
+      cats:{love:"प्रेम व आनंद", baby:"बाळ", nature:"निसर्ग", animals:"प्राणी व पक्षी", sounds:"आवाज व संगीत", food:"खाणे", moments:"क्षण"}, coverBtn:"🏠 मुखपृष्ठ",
+      coverTitle:"माझी गरोदरपणाची डायरी", coverCap:"आई आणि बाबांचा फोटो जोडा", babyMsg:"आई आणि बाबांचा एकत्र फोटो जोडा — जसा तो क्षण होता जेव्हा तुम्हाला माझ्याबद्दल पहिल्यांदा कळले. मी जन्मल्यावर हा फोटो पाहीन! 💛  — तुमचे बाळ", askMum:"आई, तुमचे नाव काय?", askDad:"आणि बाबा, तुमचे नाव काय?", mumPH:"आईचे नाव", dadPH:"बाबांचे नाव", startBtn:"आपला प्रवास सुरू करूया 🌱",
+      moods:["आनंदी","छान","ठीक","खिन्न","रडवेली"],
+      hint:"तुमची डायरी याच फोनवर साठवली जाते. नियमित बॅकअप घ्या म्हणजे ती कधीही हरवणार नाही."},
+  hi:{tag:"आपकी गर्भावस्था डायरी", momName:"माँ का नाम", babyName:"शिशु का उपनाम",
+      science:"आज की वैज्ञानिक बात", mom:"आपके लिए, माँ", dad:"आपके लिए, साथी",
+      reflect:"मन की बात लिखें", memory:"आज की याद", reflectPH:"अपने विचार लिखें...",
+      addPhoto:"फ़ोटो जोड़ें", week:"सप्ताह", day:"दिन", of:"में से", tri1:"पहली तिमाही",
+      pdf:"यादगार PDF सहेजें", backup:"बैकअप", restore:"पुनर्स्थापित", jump:"किसी भी दिन पर जाएँ", close:"बंद करें",
+      play:"ड्रॉइंग और स्टिकर", clear:"मिटाएँ", stickers:"स्टिकर", addStickers:"🙂 स्टिकर जोड़ें",
+      voice:"अपने शिशु से बात करें", rec:"● रिकॉर्ड", stop:"■ रोकें", del:"हटाएँ",
+      recHint:"आपका शिशु अब आपकी आवाज़ पहचानने लगा है। आगे सुनाने के लिए एक प्यारा सा संदेश छोड़ें — अधिकतम २ मिनट, दिन में एक, इसी फ़ोन में सुरक्षित।", noMic:"इस ब्राउज़र में माइक्रोफ़ोन उपलब्ध नहीं है।",
+      cats:{love:"प्यार व खुशी", baby:"शिशु", nature:"प्रकृति", animals:"पशु-पक्षी", sounds:"ध्वनि व संगीत", food:"खाना", moments:"पल"}, coverBtn:"🏠 मुखपृष्ठ",
+      coverTitle:"मेरी गर्भावस्था डायरी", coverCap:"मम्मी और पापा की फ़ोटो जोड़ें", babyMsg:"मम्मी और पापा की एक साथ फ़ोटो जोड़ें — ठीक उस पल जैसी जब आपने पहली बार मेरे बारे में सुना। जन्म के बाद यह फ़ोटो मुझे ज़रूर दिखेगी! 💛  — आपका शिशु", askMum:"मम्मी, आपका नाम क्या है?", askDad:"और पापा, आपका नाम क्या है?", mumPH:"मम्मी का नाम", dadPH:"पापा का नाम", startBtn:"आइए यात्रा शुरू करें 🌱",
+      moods:["खुश","अच्छा","ठीक","उदास","रुआँसा"],
+      hint:"आपकी डायरी इसी फ़ोन में सहेजी जाती है। नियमित बैकअप लें ताकि वह कभी न खोए।"}
+};
+
+var DAYS = [
+  {day:1, week:5, tri:1,
+    science:{en:"This week your baby's neural tube is forming - the very foundation of the brain and spinal cord. Rest and water matter most now.",
+             mr:"या आठवड्यात बाळाची न्यूरल ट्यूब तयार होत आहे - मेंदू व पाठीच्या कण्याचा पाया. आता विश्रांती व पुरेसे पाणी सर्वात महत्त्वाचे.",
+             hi:"इस सप्ताह आपके शिशु की न्यूरल ट्यूब बन रही है - मस्तिष्क और रीढ़ की नींव। अभी आराम और पर्याप्त पानी सबसे ज़रूरी है।"},
+    mom:{en:"Write a one-line letter to your baby: \"I found out about you, and...\"",
+         mr:"बाळाला एका ओळीचे पत्र लिहा: \"मला तुझ्याबद्दल कळले, आणि...\"",
+         hi:"शिशु को एक पंक्ति का पत्र लिखें: \"मुझे तुम्हारे बारे में पता चला, और...\""},
+    dad:{en:"Read today's line aloud. Your calm voice is already part of the baby's world.",
+         mr:"आजची ओळ मोठ्याने वाचा. तुमचा शांत आवाज आताच बाळाच्या जगाचा भाग आहे.",
+         hi:"आज की पंक्ति को ज़ोर से पढ़ें। आपकी शांत आवाज़ अभी से शिशु की दुनिया का हिस्सा है।"},
+    reflect:{en:"How did you feel the moment you knew?", mr:"कळल्या क्षणी तुम्हाला कसे वाटले?", hi:"जब पता चला उस पल आपको कैसा लगा?"}},
+
+  {day:2, week:5, tri:1,
+    science:{en:"The earliest heart tube begins to pulse this week. Lower stress keeps your heart steady - and the baby feels that calm.",
+             mr:"या आठवड्यात बाळाच्या हृदयाची सुरुवातीची नळी धडधडू लागते. कमी ताण तुमचे हृदय स्थिर ठेवतो - आणि बाळालाही तो शांतपणा जाणवतो.",
+             hi:"इस सप्ताह शिशु की शुरुआती हृदय-नली धड़कने लगती है। कम तनाव आपके दिल को स्थिर रखता है - और शिशु को वह शांति महसूस होती है।"},
+    mom:{en:"Take five slow breaths with one hand resting on your belly. Count each one.",
+         mr:"पोटावर एक हात ठेवून पाच वेळा सावकाश श्वास घ्या. प्रत्येक श्वास मोजा.",
+         hi:"पेट पर एक हाथ रखकर पाँच बार धीरे-धीरे साँस लें। हर साँस गिनें।"},
+    dad:{en:"Bring her a warm, caffeine-free drink and simply sit together for five minutes.",
+         mr:"तिच्यासाठी कॅफीनशिवाय कोमट पेय आणा आणि फक्त पाच मिनिटे सोबत बसा.",
+         hi:"उसके लिए बिना कैफ़ीन वाला गर्म पेय लाएँ और बस पाँच मिनट साथ बैठें।"},
+    reflect:{en:"Name one worry you can gently set down today.", mr:"आज तुम्ही हलकेच बाजूला ठेवू शकाल अशी एक काळजी लिहा.", hi:"आज जिसे आप धीरे से छोड़ सकते हैं, ऐसी एक चिंता लिखें।"}},
+
+  {day:3, week:5, tri:1,
+    science:{en:"The neural tube is closing now. A folate-rich diet directly supports your baby's brain development.",
+             mr:"न्यूरल ट्यूब आता बंद होत आहे. फोलेटयुक्त आहार थेट बाळाच्या मेंदूच्या विकासाला मदत करतो.",
+             hi:"न्यूरल ट्यूब अब बंद हो रही है। फोलेट से भरपूर आहार सीधे शिशु के मस्तिष्क विकास में मदद करता है।"},
+    mom:{en:"Choose a gentle nickname for your baby to use throughout this journal.",
+         mr:"या डायरीत वापरण्यासाठी बाळाचे एक प्रेमळ टोपणनाव निवडा.",
+         hi:"इस डायरी में उपयोग के लिए शिशु का एक प्यारा उपनाम चुनें।"},
+    dad:{en:"Suggest a nickname too - compare your two ideas and pick one together.",
+         mr:"तुम्हीही एक टोपणनाव सुचवा - दोघांच्या कल्पना पाहून एक निवडा.",
+         hi:"आप भी एक उपनाम सुझाएँ - दोनों के विचार मिलाकर एक चुनें।"},
+    reflect:{en:"Why does this nickname feel right?", mr:"हे टोपणनाव योग्य का वाटते?", hi:"यह उपनाम सही क्यों लगता है?"}},
+
+  {day:4, week:5, tri:1,
+    science:{en:"The brain is dividing into its three main parts this week. Good sleep is when much of this development happens.",
+             mr:"या आठवड्यात मेंदू त्याच्या तीन मुख्य भागांत विभागत आहे. हा विकास बहुतांश चांगल्या झोपेत होतो.",
+             hi:"इस सप्ताह मस्तिष्क अपने तीन मुख्य भागों में बँट रहा है। यह विकास अधिकतर अच्छी नींद में होता है।"},
+    mom:{en:"Write down one small thing you are grateful for today.",
+         mr:"आज तुम्ही ज्यासाठी कृतज्ञ आहात अशी एक छोटी गोष्ट लिहा.",
+         hi:"आज जिसके लिए आप आभारी हैं, ऐसी एक छोटी बात लिखें।"},
+    dad:{en:"Share one hope you have for your child, out loud.",
+         mr:"तुमच्या बाळासाठी असलेली एक आशा मोठ्याने सांगा.",
+         hi:"अपने बच्चे के लिए एक उम्मीद ज़ोर से कहें।"},
+    reflect:{en:"What does this baby already mean to you?", mr:"हे बाळ तुमच्यासाठी आताच काय अर्थ ठेवते?", hi:"यह शिशु अभी से आपके लिए क्या मायने रखता है?"}},
+
+  {day:5, week:6, tri:1,
+    science:{en:"A heartbeat can often be detected this week. A steady daily rhythm helps both of you settle.",
+             mr:"या आठवड्यात अनेकदा हृदयाचे ठोके जाणवू शकतात. नियमित दिनक्रम तुम्हा दोघांना स्थिर ठेवतो.",
+             hi:"इस सप्ताह अक्सर धड़कन सुनी जा सकती है। एक नियमित दिनचर्या दोनों को स्थिर रखती है।"},
+    mom:{en:"Take a slow ten-minute walk and notice three calm things around you.",
+         mr:"दहा मिनिटे सावकाश चाला आणि आजूबाजूच्या तीन शांत गोष्टी पाहा.",
+         hi:"दस मिनट धीरे-धीरे टहलें और आसपास की तीन शांत चीज़ें देखें।"},
+    dad:{en:"Walk together if you can, or ask her about her three calm things.",
+         mr:"शक्य असल्यास सोबत चाला, किंवा तिच्या त्या तीन शांत गोष्टींबद्दल विचारा.",
+         hi:"हो सके तो साथ टहलें, या उससे उन तीन शांत चीज़ों के बारे में पूछें।"},
+    reflect:{en:"How does your body feel this week?", mr:"या आठवड्यात तुमचे शरीर कसे वाटते?", hi:"इस सप्ताह आपका शरीर कैसा महसूस करता है?"}},
+
+  {day:6, week:6, tri:1,
+    science:{en:"Tiny arm and leg buds are appearing. Gentle, regular movement supports healthy circulation for both of you.",
+             mr:"बाळाचे लहान हात-पायांचे अंकुर दिसू लागले आहेत. हलकी, नियमित हालचाल तुम्हा दोघांच्या रक्ताभिसरणाला मदत करते.",
+             hi:"शिशु की नन्ही बाँहों और पैरों की कलियाँ बन रही हैं। हल्की, नियमित गतिविधि दोनों के रक्त-संचार में मदद करती है।"},
+    mom:{en:"Play a calm piece of music and note it as your baby's first song.",
+         mr:"एक शांत संगीत लावा आणि ते बाळाचे पहिले गाणे म्हणून नोंदवा.",
+         hi:"एक शांत संगीत बजाएँ और उसे शिशु का पहला गाना दर्ज करें।"},
+    dad:{en:"Choose that first song together - something you both find soothing.",
+         mr:"ते पहिले गाणे एकत्र निवडा - दोघांना शांत वाटेल असे.",
+         hi:"वह पहला गाना साथ चुनें - जो दोनों को सुकून दे।"},
+    reflect:{en:"What sound or music makes you feel at peace?", mr:"कोणता आवाज किंवा संगीत तुम्हाला शांत वाटायला लावते?", hi:"कौन-सी ध्वनि या संगीत आपको शांति देता है?"}},
+
+  {day:7, week:6, tri:1,
+    science:{en:"Early facial features are forming this week. Your positive emotions help shape a calm environment for the baby.",
+             mr:"या आठवड्यात चेहऱ्याची सुरुवातीची ठेवण तयार होत आहे. तुमच्या सकारात्मक भावना बाळासाठी शांत वातावरण घडवतात.",
+             hi:"इस सप्ताह चेहरे की शुरुआती बनावट बन रही है। आपकी सकारात्मक भावनाएँ शिशु के लिए शांत वातावरण बनाती हैं।"},
+    mom:{en:"Look at a peaceful photo or view and quietly describe it to your baby.",
+         mr:"एखादे शांत चित्र किंवा दृश्य पाहा आणि ते हळूच बाळाला सांगा.",
+         hi:"कोई शांत तस्वीर या दृश्य देखें और उसे धीरे से शिशु को बताएँ।"},
+    dad:{en:"Describe a good moment from your day to the bump, in a few sentences.",
+         mr:"तुमच्या दिवसातला एक चांगला क्षण काही वाक्यांत बाळाला सांगा.",
+         hi:"अपने दिन का एक अच्छा पल कुछ वाक्यों में बच्चे को सुनाएँ।"},
+    reflect:{en:"What is one hope you hold for your child's life?", mr:"तुमच्या बाळाच्या आयुष्यासाठी तुमची एक आशा कोणती?", hi:"अपने बच्चे के जीवन के लिए आपकी एक उम्मीद क्या है?"}}
+];
+
+var TOTAL = 270; /* full program length; MVP ships the first weeks */
+var COLORS = ["#2E2A25","#D4537E","#1D9E75","#378ADD","#BA7517"];
+var PEN_SIZES = [2,4,7];
+var STICKER_CATS = [
+  {key:"love", e:["❤️","🧡","💛","💚","💙","💜","🩷","🤍","💖","💗","💝","😊","😍","🥰","🤗","😴","✨","💫","⭐","🌟","🎉","🎈"]},
+  {key:"baby", e:["🍼","🧸","👶","🐣","👣","🦶","🧦","👕","🎀","🚼","🛏️","🪀","🧷","🩹","🐥","🪁","🎠","🧩"]},
+  {key:"nature", e:["🌸","🌷","🌼","🌻","🌹","💐","🍀","🌿","🌱","🌳","🌲","🌈","☀️","🌙","⛅","☁️","❄️","💧","🌊","🍃","🌺","🍂"]},
+  {key:"animals", e:["🐦","🕊️","🦋","🐝","🐞","🐤","🦢","🦜","🐬","🐘","🐰","🐱","🐶","🦊","🐻","🐨","🐼","🦉","🐢","🐌","🦩","🐳"]},
+  {key:"sounds", e:["🎵","🎶","🎼","🔔","🎤","🥁","🎻","🎸","🎹","📣","🎺","🪕"]},
+  {key:"food", e:["🍎","🍓","🍌","🍊","🍉","🍇","🥑","🥛","🍵","🍪","🍫","🧁","🍯","🥗","🥕","🍒","🥥"]},
+  {key:"moments", e:["🎁","🎂","📷","📖","✏️","💌","🏠","🚗","⏰","🗓️","🕯️","🛍️","💍","📝","🔖"]}
+];
+
+/* ---------- tiny IndexedDB store (no library) ---------- */
+var DB;
+function openDB(){
+  return new Promise(function(res){
+    var r = indexedDB.open("nurtura", 1);
+    r.onupgradeneeded = function(e){ e.target.result.createObjectStore("kv"); };
+    r.onsuccess = function(e){ DB = e.target.result; res(); };
+    r.onerror = function(){ res(); };
+  });
+}
+function dbGet(k){ return new Promise(function(res){ try{ var t=DB.transaction("kv","readonly").objectStore("kv").get(k); t.onsuccess=function(){res(t.result);}; t.onerror=function(){res(null);}; }catch(e){res(null);} }); }
+function dbSet(k,v){ return new Promise(function(res){ try{ var t=DB.transaction("kv","readwrite").objectStore("kv").put(v,k); t.onsuccess=function(){res();}; t.onerror=function(){res();}; }catch(e){res();} }); }
+
+/* ---------- state ---------- */
+var state = { settings:{ lang:"en", momName:"", dadName:"", babyName:"", coverPhoto:null, started:false }, days:{} };
+var lang = "en", cur = 0, saveTimer;
+
+function dayState(n){ if(!state.days[n]) state.days[n]={mood:null,momDone:false,dadDone:false,reflect:"",photos:[],doodle:null,stickers:[],audio:null}; var d=state.days[n]; if(!d.photos)d.photos=[]; if(!d.stickers)d.stickers=[]; return d; }
+function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(function(){ dbSet("state", state); }, 250); }
+
+/* ---------- rendering ---------- */
+function setText(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+function applyUI(){
+  var u=UI[lang];
+  setText("t-tag",u.tag); setText("t-science",u.science); setText("t-mom",u.mom);
+  setText("t-dad",u.dad); setText("t-reflect",u.reflect); setText("t-memory",u.memory);
+  setText("t-voice",u.voice); setText("t-recHint",u.recHint);
+  setText("t-play",u.play); setText("t-hint",u.hint);
+  document.getElementById("pdfBtn").textContent=u.pdf;
+  document.getElementById("backupBtn").textContent=u.backup;
+  document.getElementById("restoreBtn").textContent=u.restore;
+  document.getElementById("coverBtn").textContent=u.coverBtn;
+  document.getElementById("jumpClose").textContent=u.close;
+  document.getElementById("stickClose").textContent=u.close;
+  document.getElementById("stickBtn").textContent=u.addStickers;
+  document.getElementById("momName").placeholder=u.momName;
+  document.getElementById("babyName").placeholder=u.babyName;
+  document.getElementById("reflectBox").placeholder=u.reflectPH;
+  var mr=document.getElementById("moodrow"); mr.innerHTML="";
+  u.moods.forEach(function(label,i){
+    var em=["😄","🙂","😐","😟","😢"][i];
+    var d=document.createElement("div"); d.className="mood"; d.innerHTML='<div class="e">'+em+'</div><div class="l">'+label+'</div>';
+    d.onclick=function(){ var ds=dayState(DAYS[cur].day); ds.mood=(ds.mood===i?null:i); save(); renderDay(); };
+    mr.appendChild(d);
+  });
+  buildBoardBar();
+}
+function renderDots(){
+  var dz=document.getElementById("dots"); dz.innerHTML="";
+  DAYS.forEach(function(_,i){ var d=document.createElement("div"); d.className="dot"+(i===cur?" on":""); dz.appendChild(d); });
+}
+function renderDay(){
+  var u=UI[lang], d=DAYS[cur], ds=dayState(d.day);
+  setText("wklabel", u.week+" "+d.week);
+  setText("trilabel", u.tri1);
+  setText("daycount", "📅 "+u.day+" "+d.day+" "+u.of+" "+TOTAL);
+  document.getElementById("prog").style.width=Math.max(2,Math.round(d.day/TOTAL*100))+"%";
+  setText("scienceText", d.science[lang]);
+  setText("momText", d.mom[lang]);
+  setText("dadText", d.dad[lang]);
+  document.getElementById("momCard").className="card task"+(ds.momDone?" done":"");
+  document.getElementById("dadCard").className="card task"+(ds.dadDone?" done":"");
+  document.getElementById("reflectBox").value=ds.reflect||"";
+  var mr=document.getElementById("moodrow").children;
+  for(var i=0;i<mr.length;i++){ mr[i].className="mood"+(ds.mood===i?" sel":""); }
+  var pz=document.getElementById("photos"); pz.innerHTML="";
+  (ds.photos||[]).forEach(function(src,idx){
+    var t=document.createElement("div"); t.className="thumb";
+    t.innerHTML='<img src="'+src+'"/><button class="rm">x</button>';
+    t.querySelector("img").onclick=function(){ openLightbox(src); };
+    t.querySelector(".rm").onclick=function(e){ e.stopPropagation(); ds.photos.splice(idx,1); save(); renderDay(); };
+    pz.appendChild(t);
+  });
+  var add=document.createElement("div"); add.className="addphoto";
+  add.innerHTML='<div class="e">+</div><div>'+u.addPhoto+'</div>';
+  add.onclick=function(){ document.getElementById("photoInput").click(); };
+  pz.appendChild(add);
+  document.getElementById("prev").disabled=(cur===0);
+  document.getElementById("next").disabled=(cur===DAYS.length-1);
+  renderDots();
+  renderVoice();
+  sizeCanvas(); loadDoodle(); renderStickers();
+}
+
+/* ---------- voice message ---------- */
+var mediaRec=null, recChunks=[], recTimer=null, recSecs=0, recStream=null, recDayIndex=0;
+function fmtT(s){ var m=Math.floor(s/60), ss=s%60; return m+":"+(ss<10?"0":"")+ss; }
+function renderVoice(){
+  var u=UI[lang], area=document.getElementById("voiceArea"), ds=dayState(DAYS[cur].day);
+  area.innerHTML="";
+  if(mediaRec && mediaRec.state==="recording" && recDayIndex===cur){
+    var stop=document.createElement("button"); stop.className="vbtn rec"; stop.id="recBtn"; stop.textContent=u.stop+" ("+fmtT(recSecs)+")"; stop.onclick=stopRec;
+    area.appendChild(stop); return;
+  }
+  if(ds.audio){
+    var au=document.createElement("audio"); au.controls=true; au.src=ds.audio; area.appendChild(au);
+    var del=document.createElement("button"); del.className="vbtn del"; del.textContent="🗑 "+u.del; del.onclick=function(){ dayState(DAYS[cur].day).audio=null; save(); renderVoice(); };
+    area.appendChild(del);
+  } else {
+    var rec=document.createElement("button"); rec.className="vbtn rec"; rec.textContent=u.rec; rec.onclick=startRec;
+    area.appendChild(rec);
+  }
+}
+function pickMime(){ var o=["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/aac","audio/ogg"]; for(var i=0;i<o.length;i++){ try{ if(window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(o[i])) return o[i]; }catch(e){} } return ""; }
+function startRec(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){ alert(UI[lang].noMic); return; }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    recStream=stream; recChunks=[]; recDayIndex=cur; var mime=pickMime();
+    try{ mediaRec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream); }catch(e){ mediaRec=new MediaRecorder(stream); }
+    mediaRec.ondataavailable=function(ev){ if(ev.data&&ev.data.size) recChunks.push(ev.data); };
+    mediaRec.onstop=function(){
+      if(recTimer){ clearInterval(recTimer); recTimer=null; }
+      var blob=new Blob(recChunks,{type:(mediaRec&&mediaRec.mimeType)||"audio/webm"});
+      var fr=new FileReader(); fr.onload=function(){ dayState(DAYS[recDayIndex].day).audio=fr.result; save(); renderVoice(); }; fr.readAsDataURL(blob);
+      if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream=null; }
+    };
+    recSecs=0; mediaRec.start();
+    recTimer=setInterval(function(){ recSecs++; var b=document.getElementById("recBtn"); if(b) b.textContent=UI[lang].stop+" ("+fmtT(recSecs)+")"; if(recSecs>=120) stopRec(); },1000);
+    renderVoice();
+  }).catch(function(){ alert(UI[lang].noMic); });
+}
+function stopRec(){ try{ if(mediaRec && mediaRec.state==="recording") mediaRec.stop(); }catch(e){} }
+
+/* ---------- lightbox ---------- */
+function openLightbox(src){ document.getElementById("lbImg").src=src; document.getElementById("lightbox").classList.add("open"); }
+function closeLightbox(){ document.getElementById("lightbox").classList.remove("open"); document.getElementById("lbImg").src=""; }
+
+/* ---------- jump-to-day picker ---------- */
+function openJump(){
+  var u=UI[lang], body=document.getElementById("jumpBody"); body.innerHTML="";
+  document.getElementById("jumpTitle").textContent=u.jump;
+  var weeks={};
+  DAYS.forEach(function(d,i){ (weeks[d.week]=weeks[d.week]||[]).push({i:i,d:d}); });
+  Object.keys(weeks).sort(function(a,b){ return a-b; }).forEach(function(wk){
+    var g=document.createElement("div"); g.className="wkgrp";
+    g.innerHTML='<div class="wl">'+u.week+" "+wk+'</div>';
+    var chips=document.createElement("div"); chips.className="daychips";
+    weeks[wk].forEach(function(o){
+      var c=document.createElement("div"); c.className="daychip"+(o.i===cur?" cur":"");
+      c.textContent=u.day+" "+o.d.day;
+      c.onclick=function(){ goToDay(o.i); closeJump(); };
+      chips.appendChild(c);
+    });
+    g.appendChild(chips); body.appendChild(g);
+  });
+  document.getElementById("jumpOverlay").classList.add("open");
+}
+function closeJump(){ document.getElementById("jumpOverlay").classList.remove("open"); }
+function goToDay(i){ stopRec(); cur=i; renderDay(); }
+
+/* ---------- doodle + stickers ---------- */
+var penColor=COLORS[0], penWidth=PEN_SIZES[1], drawing=false, lastX=0, lastY=0;
+function canvasEl(){ return document.getElementById("doodle"); }
+function boardEl(){ return document.getElementById("board"); }
+function sizeCanvas(){ var c=canvasEl(), b=boardEl(); var w=b.clientWidth||300, h=b.clientHeight||210; if(c.width!==w) c.width=w; if(c.height!==h) c.height=h; }
+function clearCanvas(){ var c=canvasEl(); c.getContext("2d").clearRect(0,0,c.width,c.height); }
+function loadDoodle(){ var ds=dayState(DAYS[cur].day), c=canvasEl(); clearCanvas(); if(ds.doodle){ var img=new Image(); img.onload=function(){ c.getContext("2d").drawImage(img,0,0,c.width,c.height); }; img.src=ds.doodle; } }
+function saveDoodle(){ try{ dayState(DAYS[cur].day).doodle=canvasEl().toDataURL("image/png"); save(); }catch(e){} }
+function canvasPos(e){ var c=canvasEl(), r=c.getBoundingClientRect(); return { x:(e.clientX-r.left)*(c.width/r.width), y:(e.clientY-r.top)*(c.height/r.height) }; }
+function startDraw(e){ if(e.target!==canvasEl())return; drawing=true; var p=canvasPos(e); lastX=p.x; lastY=p.y; if(e.cancelable)e.preventDefault(); }
+function moveDraw(e){ if(!drawing)return; var p=canvasPos(e), ctx=canvasEl().getContext("2d"); ctx.strokeStyle=penColor; ctx.lineWidth=penWidth; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke(); lastX=p.x; lastY=p.y; if(e.cancelable)e.preventDefault(); }
+function endDraw(){ if(drawing){ drawing=false; saveDoodle(); } }
+function buildBoardBar(){
+  var bar=document.getElementById("boardbar"); bar.innerHTML="";
+  COLORS.forEach(function(col){ var s=document.createElement("div"); s.className="swatch"+(col===penColor?" sel":""); s.style.background=col; s.onclick=function(){ penColor=col; buildBoardBar(); }; bar.appendChild(s); });
+  var rb=document.createElement("div"); rb.className="rainbow"+(COLORS.indexOf(penColor)<0?" sel":"");
+  rb.onclick=function(){ var cp=document.getElementById("colorPick"); if(COLORS.indexOf(penColor)<0) cp.value=penColor; cp.click(); };
+  bar.appendChild(rb);
+  var sep=document.createElement("div"); sep.className="pensep"; bar.appendChild(sep);
+  PEN_SIZES.forEach(function(sz){ var p=document.createElement("div"); p.className="pensize"+(sz===penWidth?" sel":""); var dot=document.createElement("i"); var dd=Math.round(sz*1.6)+4; dot.style.width=dd+"px"; dot.style.height=dd+"px"; p.appendChild(dot); p.onclick=function(){ penWidth=sz; buildBoardBar(); }; bar.appendChild(p); });
+  var clr=document.createElement("button"); clr.className="clearbtn"; clr.textContent=UI[lang].clear;
+  clr.onclick=function(){ var ds=dayState(DAYS[cur].day); ds.doodle=null; clearCanvas(); save(); };
+  bar.appendChild(clr);
+}
+function renderStickers(){
+  var b=boardEl();
+  Array.prototype.slice.call(b.querySelectorAll(".sticker")).forEach(function(n){ n.parentNode.removeChild(n); });
+  var ds=dayState(DAYS[cur].day);
+  (ds.stickers||[]).forEach(function(st,idx){
+    var el=document.createElement("div"); el.className="sticker"; el.textContent=st.e;
+    el.style.left=st.x+"%"; el.style.top=st.y+"%";
+    var x=document.createElement("button"); x.className="sx"; x.textContent="x";
+    x.onclick=function(ev){ ev.stopPropagation(); ds.stickers.splice(idx,1); save(); renderStickers(); };
+    el.appendChild(x);
+    dragSticker(el, st);
+    b.appendChild(el);
+  });
+}
+function addSticker(em){ var ds=dayState(DAYS[cur].day); ds.stickers=ds.stickers||[]; ds.stickers.push({e:em, x:50, y:45}); save(); renderStickers(); }
+function dragSticker(el, st){
+  el.addEventListener("pointerdown", function(ev){
+    if(ev.target.classList.contains("sx"))return;
+    ev.stopPropagation(); if(ev.cancelable)ev.preventDefault();
+    var b=boardEl();
+    function mv(e2){ var r=b.getBoundingClientRect(); var nx=Math.max(2,Math.min(98,(e2.clientX-r.left)/r.width*100)); var ny=Math.max(2,Math.min(98,(e2.clientY-r.top)/r.height*100)); st.x=Math.round(nx); st.y=Math.round(ny); el.style.left=st.x+"%"; el.style.top=st.y+"%"; }
+    function up(){ document.removeEventListener("pointermove",mv); document.removeEventListener("pointerup",up); save(); }
+    document.addEventListener("pointermove",mv); document.addEventListener("pointerup",up);
+  });
+}
+function buildStickerPopup(){
+  var u=UI[lang], body=document.getElementById("stickBody"); body.innerHTML="";
+  document.getElementById("stickTitle").textContent=u.stickers;
+  STICKER_CATS.forEach(function(cat){
+    var lab=document.createElement("div"); lab.className="catlabel"; lab.textContent=(u.cats&&u.cats[cat.key])||cat.key; body.appendChild(lab);
+    var g=document.createElement("div"); g.className="stickgrid";
+    cat.e.forEach(function(em){ var o=document.createElement("div"); o.className="sopt"; o.textContent=em; o.onclick=function(){ addSticker(em); closeSticker(); }; g.appendChild(o); });
+    body.appendChild(g);
+  });
+}
+function openSticker(){ buildStickerPopup(); document.getElementById("stickerOverlay").classList.add("open"); }
+function closeSticker(){ document.getElementById("stickerOverlay").classList.remove("open"); }
+
+/* ---------- image compression ---------- */
+function compress(file, cb){
+  var img=new Image(), url=URL.createObjectURL(file);
+  img.onload=function(){
+    var max=900, w=img.width, h=img.height;
+    if(w>h && w>max){ h=Math.round(h*max/w); w=max; } else if(h>max){ w=Math.round(w*max/h); h=max; }
+    var c=document.createElement("canvas"); c.width=w; c.height=h;
+    c.getContext("2d").drawImage(img,0,0,w,h);
+    URL.revokeObjectURL(url);
+    cb(c.toDataURL("image/jpeg",0.7));
+  };
+  img.src=url;
+}
+
+/* ---------- PDF keepsake (browser print) ---------- */
+function compositeBoard(ds){
+  return new Promise(function(res){
+    var w=300, h=210, c=document.createElement("canvas"); c.width=w; c.height=h; var ctx=c.getContext("2d");
+    ctx.fillStyle="#FFFDF9"; ctx.fillRect(0,0,w,h);
+    function stickers(){ ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="26px sans-serif"; (ds.stickers||[]).forEach(function(st){ try{ ctx.fillText(st.e, st.x/100*w, st.y/100*h); }catch(e){} }); res(c.toDataURL("image/jpeg",0.85)); }
+    if(ds.doodle){ var img=new Image(); img.onload=function(){ ctx.drawImage(img,0,0,w,h); stickers(); }; img.onerror=stickers; img.src=ds.doodle; } else stickers();
+  });
+}
+function buildPrint(){
+  var u=UI[lang];
+  var tasks=DAYS.map(function(d){
+    var ds=state.days[d.day]; if(!ds) return Promise.resolve("");
+    var hasBoard=ds.doodle||(ds.stickers&&ds.stickers.length);
+    var any=ds.reflect||ds.mood!==null||(ds.photos&&ds.photos.length)||hasBoard||ds.audio;
+    if(!any) return Promise.resolve("");
+    var html='<div class="pday"><div style="font-weight:600;">'+u.week+' '+d.week+' - '+u.day+' '+d.day+'</div>';
+    if(ds.mood!==null) html+='<div style="margin-top:4px;">'+["😄","🙂","😐","😟","😢"][ds.mood]+' '+u.moods[ds.mood]+'</div>';
+    html+='<div style="margin-top:6px;color:#444;">'+d.science[lang]+'</div>';
+    if(ds.reflect) html+='<div style="margin-top:6px;"><b>'+u.reflect+':</b> '+escapeHtml(ds.reflect)+'</div>';
+    if(ds.audio) html+='<div style="margin-top:6px;color:#777;">🎤 '+u.voice+'</div>';
+    if(ds.photos&&ds.photos.length){ html+='<div class="pphotos">'; ds.photos.forEach(function(s){ html+='<img src="'+s+'"/>'; }); html+='</div>'; }
+    if(hasBoard){ return compositeBoard(ds).then(function(durl){ return html+'<div style="margin-top:8px;"><img src="'+durl+'" style="width:300px;border:1px solid #ddd;border-radius:8px;"/></div></div>'; }); }
+    return Promise.resolve(html+'</div>');
+  });
+  return Promise.all(tasks).then(function(parts){
+    var s=state.settings, who=[];
+    if(s.momName) who.push(escapeHtml(s.momName));
+    if(s.dadName) who.push(escapeHtml(s.dadName));
+    var head='<div style="text-align:center;padding:18px 0;border-bottom:2px solid #1D9E75;">';
+    if(s.coverPhoto) head+='<img src="'+s.coverPhoto+'" style="width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid #D4537E;"><br>';
+    head+='<div style="font-size:24px;font-weight:600;margin-top:8px;">'+(escapeHtml(s.babyName)||"Our Baby")+'</div>';
+    head+='<div style="color:#7A736B;">'+u.tag+(who.length?(" - "+who.join(" & ")):"")+'</div></div>';
+    document.getElementById("print").innerHTML=head+parts.join("");
+  });
+}
+function escapeHtml(s){ return (s||"").replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];}); }
+
+/* ---------- backup / restore ---------- */
+function backup(){
+  var blob=new Blob([JSON.stringify(state)],{type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="pihu-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click();
+}
+function restore(file){
+  var r=new FileReader();
+  r.onload=function(){ try{ var d=JSON.parse(r.result); if(d&&d.days){ state=d; lang=(state.settings&&state.settings.lang)||"en"; dbSet("state",state); initInputs(); applyUI(); syncLangButtons(); renderDay(); } }catch(e){ alert("Could not read that backup file."); } };
+  r.readAsText(file);
+}
+
+/* ---------- cover / onboarding ---------- */
+function showCover(){ document.getElementById("app").style.display="none"; document.getElementById("cover").style.display="flex"; renderCover(); }
+function showApp(){ document.getElementById("cover").style.display="none"; document.getElementById("app").style.display="block"; initInputs(); renderDay(); }
+function renderCover(){
+  var u=UI[lang], s=state.settings;
+  setText("cv-title", u.coverTitle); setText("cv-addcap", u.coverCap); setText("cv-msg", u.babyMsg);
+  setText("cv-askMum", u.askMum); setText("cv-askDad", u.askDad);
+  var mum=document.getElementById("cv-mum"), dad=document.getElementById("cv-dad");
+  mum.placeholder=u.mumPH; dad.placeholder=u.dadPH; mum.value=s.momName||""; dad.value=s.dadName||"";
+  document.getElementById("cv-start").textContent=u.startBtn;
+  var ph=document.getElementById("cv-photo"), plus=ph.querySelector(".cv-plus");
+  var rm=document.getElementById("cv-rm");
+  if(s.coverPhoto){ ph.style.backgroundImage="url("+s.coverPhoto+")"; ph.classList.add("has"); plus.style.display="none"; rm.style.display="block"; }
+  else { ph.style.backgroundImage="none"; ph.classList.remove("has"); plus.style.display="block"; rm.style.display="none"; }
+  var lb=document.querySelectorAll("#cv-lang button"); for(var i=0;i<lb.length;i++) lb[i].classList.toggle("on", lb[i].dataset.lang===lang);
+}
+
+/* ---------- wiring ---------- */
+function syncLangButtons(){ var bs=document.querySelectorAll(".langsel button"); for(var i=0;i<bs.length;i++){ bs[i].classList.toggle("on", bs[i].dataset.lang===lang); } }
+function initInputs(){
+  document.getElementById("momName").value=(state.settings&&state.settings.momName)||"";
+  document.getElementById("babyName").value=(state.settings&&state.settings.babyName)||"";
+}
+function wire(){
+  var cl=document.querySelectorAll("#cv-lang button");
+  for(var j=0;j<cl.length;j++){ (function(b){ b.onclick=function(){ lang=b.dataset.lang; state.settings.lang=lang; save(); syncLangButtons(); applyUI(); renderCover(); }; })(cl[j]); }
+  document.getElementById("cv-photo").onclick=function(){ document.getElementById("coverPhotoInput").click(); };
+  document.getElementById("coverPhotoInput").onchange=function(){ var f=this.files[0]; if(!f)return; compress(f,function(src){ state.settings.coverPhoto=src; save(); renderCover(); }); this.value=""; };
+  document.getElementById("cv-mum").oninput=function(){ state.settings.momName=this.value; save(); };
+  document.getElementById("cv-dad").oninput=function(){ state.settings.dadName=this.value; save(); };
+  document.getElementById("cv-start").onclick=function(){ state.settings.started=true; save(); showApp(); };
+  document.getElementById("cv-rm").onclick=function(ev){ ev.stopPropagation(); state.settings.coverPhoto=null; save(); renderCover(); };
+  document.getElementById("coverBtn").onclick=showCover;
+  var bs=document.querySelectorAll(".langsel button");
+  for(var i=0;i<bs.length;i++){ (function(b){ b.onclick=function(){ lang=b.dataset.lang; state.settings.lang=lang; save(); syncLangButtons(); applyUI(); renderDay(); }; })(bs[i]); }
+  document.getElementById("momName").oninput=function(){ state.settings.momName=this.value; save(); };
+  document.getElementById("babyName").oninput=function(){ state.settings.babyName=this.value; save(); };
+  document.getElementById("momCard").onclick=function(e){ if(e.target.closest(".ctext"))return; var ds=dayState(DAYS[cur].day); ds.momDone=!ds.momDone; save(); renderDay(); };
+  document.getElementById("dadCard").onclick=function(e){ if(e.target.closest(".ctext"))return; var ds=dayState(DAYS[cur].day); ds.dadDone=!ds.dadDone; save(); renderDay(); };
+  document.getElementById("reflectBox").oninput=function(){ dayState(DAYS[cur].day).reflect=this.value; save(); };
+  document.getElementById("prev").onclick=function(){ if(cur>0) goToDay(cur-1); };
+  document.getElementById("next").onclick=function(){ if(cur<DAYS.length-1) goToDay(cur+1); };
+  document.getElementById("daycount").onclick=openJump;
+  document.getElementById("jumpClose").onclick=closeJump;
+  document.getElementById("jumpOverlay").onclick=function(e){ if(e.target===this) closeJump(); };
+  document.getElementById("stickBtn").onclick=openSticker;
+  document.getElementById("stickClose").onclick=closeSticker;
+  document.getElementById("stickerOverlay").onclick=function(e){ if(e.target===this) closeSticker(); };
+  document.getElementById("colorPick").onchange=function(){ penColor=this.value; buildBoardBar(); };
+  document.getElementById("lbClose").onclick=closeLightbox;
+  document.getElementById("lightbox").onclick=function(e){ if(e.target===this) closeLightbox(); };
+  document.getElementById("photoInput").onchange=function(){ var f=this.files[0]; if(!f)return; compress(f,function(src){ dayState(DAYS[cur].day).photos.push(src); save(); renderDay(); }); this.value=""; };
+  document.getElementById("pdfBtn").onclick=function(){ buildPrint().then(function(){ setTimeout(function(){ window.print(); },80); }); };
+  document.getElementById("backupBtn").onclick=backup;
+  document.getElementById("restoreBtn").onclick=function(){ document.getElementById("restoreInput").click(); };
+  document.getElementById("restoreInput").onchange=function(){ if(this.files[0]) restore(this.files[0]); this.value=""; };
+  var cv=canvasEl();
+  cv.addEventListener("pointerdown", startDraw);
+  document.addEventListener("pointermove", moveDraw);
+  document.addEventListener("pointerup", endDraw);
+  window.addEventListener("resize", function(){ sizeCanvas(); loadDoodle(); });
+}
+
+(function start(){
+  openDB().then(function(){ return dbGet("state"); }).then(function(saved){
+    if(saved&&saved.days){ state=saved; lang=(state.settings&&state.settings.lang)||"en"; }
+    if(!state.settings) state.settings={};
+    wire(); syncLangButtons(); applyUI();
+    if(state.settings.started){ showApp(); } else { showCover(); }
+  });
+})();
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+</body>
+</html>

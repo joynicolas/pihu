@@ -1,0 +1,15 @@
+{
+  "name": "Pihu — Pregnancy Journal",
+  "short_name": "Pihu",
+  "description": "A gentle, day-by-day pregnancy journal for mother and partner.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF7F3",
+  "theme_color": "#D4537E",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
