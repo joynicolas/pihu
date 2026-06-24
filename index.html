@@ -111,7 +111,7 @@
   .lightbox.open{display:flex;}
   .lightbox img{max-width:94%; max-height:84%; border-radius:10px;}
   .lbclose{position:absolute; top:16px; right:18px; width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.18); color:#fff; border:none; font-size:24px; cursor:pointer;}
-  #cover{display:none; flex-direction:column; align-items:center; min-height:100vh; padding:24px 22px 44px; background:linear-gradient(160deg,#FCE9F1 0%,#F4ECFB 48%,#E9F6F1 100%); position:relative; overflow:auto; isolation:isolate;}
+  #cover{display:none; flex-direction:column; align-items:center; min-height:100vh; padding:24px 22px 132px; background:linear-gradient(160deg,#FCE9F1 0%,#F4ECFB 48%,#E9F6F1 100%); position:relative; overflow:auto; isolation:isolate;}
   .cv-deco{position:absolute; font-size:22px; opacity:.55; pointer-events:none; animation:floatA 6s ease-in-out infinite;}
   .cv-scene{position:absolute; left:0; bottom:6px; z-index:-1; opacity:.9; pointer-events:none;}
   .sway{transform-box:fill-box; transform-origin:0% 100%; animation:swayA 7s ease-in-out infinite;}
@@ -533,6 +533,7 @@ function renderDay(){
   renderDots();
   renderVoice();
   sizeCanvas(); loadDoodle(); renderStickers();
+  state.settings.lastDay=d.day; save();
 }
 
 /* ---------- voice message ---------- */
@@ -616,8 +617,12 @@ function endDraw(){ if(drawing){ drawing=false; saveDoodle(); } }
 function buildBoardBar(){
   var bar=document.getElementById("boardbar"); bar.innerHTML="";
   COLORS.forEach(function(col){ var s=document.createElement("div"); s.className="swatch"+(col===penColor?" sel":""); s.style.background=col; s.onclick=function(){ penColor=col; buildBoardBar(); }; bar.appendChild(s); });
-  var rb=document.createElement("div"); rb.className="rainbow"+(COLORS.indexOf(penColor)<0?" sel":"");
-  rb.onclick=function(){ var cp=document.getElementById("colorPick"); if(COLORS.indexOf(penColor)<0) cp.value=penColor; cp.click(); };
+  var rb=document.createElement("label"); rb.className="rainbow"+(COLORS.indexOf(penColor)<0?" sel":""); rb.style.position="relative"; rb.style.overflow="hidden"; rb.style.display="inline-block";
+  var ci=document.createElement("input"); ci.type="color"; ci.value=(COLORS.indexOf(penColor)<0?penColor:"#ff66aa");
+  ci.style.cssText="position:absolute;left:-20%;top:-20%;width:140%;height:140%;opacity:0;border:none;padding:0;margin:0;cursor:pointer;";
+  ci.oninput=function(){ penColor=ci.value; };
+  ci.onchange=function(){ penColor=ci.value; buildBoardBar(); };
+  rb.appendChild(ci);
   bar.appendChild(rb);
   var sep=document.createElement("div"); sep.className="pensep"; bar.appendChild(sep);
   PEN_SIZES.forEach(function(sz){ var p=document.createElement("div"); p.className="pensize"+(sz===penWidth?" sel":""); var dot=document.createElement("i"); var dd=Math.round(sz*1.6)+4; dot.style.width=dd+"px"; dot.style.height=dd+"px"; p.appendChild(dot); p.onclick=function(){ penWidth=sz; buildBoardBar(); }; bar.appendChild(p); });
@@ -706,10 +711,13 @@ function buildPrint(){
     var s=state.settings, who=[];
     if(s.momName) who.push(escapeHtml(s.momName));
     if(s.dadName) who.push(escapeHtml(s.dadName));
-    var head='<div style="text-align:center;padding:18px 0;border-bottom:2px solid #1D9E75;">';
-    if(s.coverPhoto) head+='<img src="'+s.coverPhoto+'" style="width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid #D4537E;"><br>';
-    head+='<div style="font-size:24px;font-weight:600;margin-top:8px;">'+(escapeHtml(s.babyName)||"Our Baby")+'</div>';
-    head+='<div style="color:#7A736B;">'+u.tag+(who.length?(" - "+who.join(" & ")):"")+'</div></div>';
+    var head='<div style="text-align:center;padding:50px 0 40px;">';
+    head+='<div style="font-size:30px;font-weight:600;color:#B83C66;margin-bottom:18px;">'+u.coverTitle+'</div>';
+    if(s.coverPhoto) head+='<img src="'+s.coverPhoto+'" style="width:150px;height:150px;border-radius:50%;object-fit:cover;border:4px solid #D4537E;"><br>';
+    head+='<div style="font-size:24px;font-weight:600;margin-top:16px;">'+(escapeHtml(s.babyName)||"Our Baby")+'</div>';
+    if(who.length) head+='<div style="color:#7A736B;margin-top:4px;">'+who.join(" & ")+'</div>';
+    head+='<div style="color:#9A8E94;margin-top:8px;font-size:13px;">'+u.tag+'</div>';
+    head+='</div><div style="page-break-after:always;"></div>';
     document.getElementById("print").innerHTML=head+parts.join("");
   });
 }
@@ -729,7 +737,8 @@ function restore(file){
 
 /* ---------- cover / onboarding ---------- */
 function showCover(){ document.getElementById("app").style.display="none"; document.getElementById("cover").style.display="flex"; renderCover(); }
-function showApp(){ document.getElementById("cover").style.display="none"; document.getElementById("app").style.display="block"; initInputs(); renderDay(); }
+function dayIndexFor(n){ for(var i=0;i<DAYS.length;i++){ if(DAYS[i].day===n) return i; } return 0; }
+function showApp(){ document.getElementById("cover").style.display="none"; document.getElementById("app").style.display="block"; if(state.settings && state.settings.lastDay){ cur=dayIndexFor(state.settings.lastDay); } initInputs(); renderDay(); }
 function renderCover(){
   var u=UI[lang], s=state.settings;
   setText("cv-title", u.coverTitle); setText("cv-addcap", u.coverCap); setText("cv-msg", u.babyMsg);
